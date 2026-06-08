@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>爆款结构迁移引擎 — 猫meme视频创作Agent</title>
+<style>
+:root {
+  --bg: #0f0f1a;
+  --surface: #1a1a2e;
+  --surface2: #252540;
+  --border: #333355;
+  --text: #e8e8f0;
+  --text2: #a0a0bb;
+  --accent: #7c5cfc;
+  --accent2: #5ce0d4;
+  --danger: #fc5c7c;
+  --success: #5cfc8c;
+  --warning: #fccc5c;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ── Header ── */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header h1 { font-size: 20px; font-weight: 700; }
+.header h1 span { color: var(--accent); }
+.header .status { font-size: 13px; color: var(--text2); display: flex; align-items: center; gap: 8px; }
+.header .status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+/* ── Step Indicator ── */
+.steps {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  padding: 24px 16px 0;
+  max-width: 800px;
+  margin: 0 auto;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text2);
+  position: relative;
+}
+.step.active { color: var(--accent); font-weight: 600; }
+.step.done { color: var(--success); }
+.step .num {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+}
+.step.active .num { border-color: var(--accent); background: var(--accent); color: #fff; }
+.step.done .num { border-color: var(--success); background: var(--success); color: #000; }
+.step-connector {
+  width: 40px; height: 2px;
+  background: var(--border);
+  align-self: center;
+  margin: 0 -4px;
+}
+.step-connector.done { background: var(--success); }
+
+/* ── Main Container ── */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.card h2 { font-size: 18px; margin-bottom: 16px; }
+.card h3 { font-size: 15px; margin-bottom: 8px; color: var(--accent2); }
+
+/* ── Form ── */
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+.form-group .hint { font-size: 12px; color: var(--text2); margin-top: 4px; }
+textarea, input[type="text"] {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+textarea:focus, input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+textarea { min-height: 80px; }
+
+.file-upload {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--surface2);
+}
+.file-upload:hover { border-color: var(--accent); background: rgba(124,92,252,0.05); }
+.file-upload .icon { font-size: 32px; margin-bottom: 8px; }
+.file-upload .text { font-size: 13px; color: var(--text2); }
+.file-upload input { display: none; }
+.file-list { margin-top: 8px; font-size: 12px; color: var(--accent2); }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #6a4de6; transform: translateY(-1px); }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover:not(:disabled) { background: var(--border); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-success { background: var(--success); color: #000; }
+
+/* ── Loading ── */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+  color: var(--text2);
+}
+.spinner {
+  width: 24px; height: 24px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Structure Display ── */
+.structure-card {
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.structure-card .label { font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+.structure-card .value { font-size: 14px; margin-top: 4px; }
+
+/* ── Script Cards ── */
+.script-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.script-card {
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.script-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow); }
+.script-card.selected { border-color: var(--accent); background: rgba(124,92,252,0.08); }
+.script-card .badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.badge-click { background: rgba(252,92,124,0.2); color: var(--danger); }
+.badge-resonance { background: rgba(92,224,212,0.2); color: var(--accent2); }
+.badge-tempo { background: rgba(252,204,92,0.2); color: var(--warning); }
+.script-card .title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+.script-card .meta { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+.script-card .scenes-preview { font-size: 12px; color: var(--text2); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+
+/* ── Storyboard ── */
+.scene-list { display: flex; flex-direction: column; gap: 12px; }
+.scene-item {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 12px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  border-left: 3px solid var(--accent);
+  transition: all 0.2s;
+}
+.scene-item:hover { background: rgba(124,92,252,0.05); }
+.scene-num {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 15px;
+}
+.scene-info { font-size: 13px; }
+.scene-info .desc { font-weight: 600; margin-bottom: 4px; }
+.scene-info .detail { color: var(--text2); font-size: 12px; }
+.scene-info .detail span { margin-right: 12px; }
+.scene-info .subtitle-text {
+  background: rgba(124,92,252,0.15);
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+.tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  margin-right: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+/* ── Edit Panel ── */
+.edit-panel {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.edit-panel input {
+  flex: 1;
+  padding: 12px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+}
+.edit-panel input:focus { outline: none; border-color: var(--accent); }
+
+.edit-history {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text2);
+}
+.edit-history .history-item {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.edit-history .history-item:last-child { border-bottom: none; }
+
+/* ── Hints ── */
+.hints { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.hint {
+  padding: 6px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text2);
+}
+.hint:hover { border-color: var(--accent); color: var(--text); background: rgba(124,92,252,0.1); }
+
+/* ── SSE Progress ── */
+.progress-bar-wrap {
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  height: 6px;
+  margin: 16px 0;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: var(--radius-sm);
+  transition: width 0.4s ease;
+  width: 0%;
+}
+.script-stream-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 12px;
+  animation: fadeInUp 0.4s ease;
+}
+.script-stream-card .status-icon { font-size: 20px; }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Gaps Report ── */
+.gap-item {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.gap-high { background: rgba(252,92,124,0.1); border:1px solid rgba(252,92,124,0.3); }
+.gap-medium { background: rgba(252,204,92,0.1); border:1px solid rgba(252,204,92,0.3); }
+.gap-low { background: rgba(92,252,140,0.05); border:1px solid rgba(92,252,140,0.2); }
+
+/* ── Final output ── */
+.output-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.output-stat {
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  text-align: center;
+}
+.output-stat .num { font-size: 28px; font-weight: 700; color: var(--accent); }
+.output-stat .label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+/* ── Utility ── */
+.hidden { display: none !important; }
+.text-center { text-align: center; }
+.mt-16 { margin-top: 16px; }
+.mb-16 { margin-bottom: 16px; }
+.flex { display: flex; }
+.gap-8 { gap: 8px; }
+.justify-center { justify-content: center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎬 <span>爆款结构迁移引擎</span></h1>
+  <div class="status">
+    <span class="dot"></span>
+    <span id="statusText">就绪</span>
+  </div>
+</div>
+
+<div class="steps" id="stepIndicator">
+  <div class="step active" data-step="1"><span class="num">1</span>输入主题</div>
+  <div class="step-connector"></div>
+  <div class="step" data-step="2"><span class="num">2</span>选择剧本</div>
+  <div class="step-connector"></div>
+  <div class="step" data-step="3"><span class="num">3</span>分镜预览</div>
+  <div class="step-connector"></div>
+  <div class="step" data-step="4"><span class="num">4</span>调整输出</div>
+</div>
+
+<div class="container" id="mainContainer">
+  <!-- Dynamic content rendered by JS -->
+</div>
+
+<script>
+// ─── State ───
+const S = {
+  sessionId: '',
+  state: 'IDLE',
+  theme: '',
+  scripts: null,
+  selectedScript: null,
+  storyboard: null,
+  videoUrl: null,
+};
+
+// ─── API helpers ───
+async function api(url, opts = {}) {
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+  });
+  return res.json();
+}
+
+function apiForm(url, formData) {
+  return fetch(url, { method: 'POST', body: formData }).then(r => r.json());
+}
+
+// ─── Render ───
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+const main = () => $('#mainContainer');
+
+function render(html) { main().innerHTML = html; }
+function setStatus(text) { $('#statusText').textContent = text; }
+function setStep(n) {
+  $$('.step').forEach((el, i) => {
+    el.classList.remove('active', 'done');
+    if (i + 1 < n) el.classList.add('done');
+    if (i + 1 === n) el.classList.add('active');
+  });
+  $$('.step-connector').forEach((el, i) => {
+    if (i + 1 < n) el.classList.add('done');
+    else el.classList.remove('done');
+  });
+}
+
+// ─── Step 1: Theme Input ───
+function renderStep1() {
+  setStep(1);
+  setStatus('等待输入主题');
+  render(`
+    <div class="card">
+      <h2>🎯 创建你的猫meme视频</h2>
+      <p style="color:var(--text2);margin-bottom:20px;font-size:14px">
+        描述你的视频主题，AI会自动匹配爆款结构，生成3个候选剧本，最终输出逐镜头分镜脚本。
+      </p>
+
+      <div class="form-group">
+        <label>📝 主题描述 <span style="color:var(--danger)">*必填</span></label>
+        <textarea id="themeInput" placeholder="例如：大学生期末周崩溃日常——还剩三天考试，一个字没看&#10;打工人的周一综合症&#10;减肥失败的一百种理由..."></textarea>
+        <div class="hint">描述越具体，生成的剧本越精准</div>
+      </div>
+
+      <div class="form-group">
+        <label>🎥 参考爆款视频（可选）</label>
+        <div class="file-upload" onclick="document.getElementById('videoInput').click()">
+          <div class="icon">📹</div>
+          <div class="text">点击上传参考视频，或使用内置爆款视频库</div>
+        </div>
+        <input type="file" id="videoInput" accept="video/*" onchange="showFileName(this, 'videoFileList')">
+        <div id="videoFileList" class="file-list"></div>
+      </div>
+
+      <div class="form-group">
+        <label>🖼️ 上传素材（可选）</label>
+        <div class="file-upload" onclick="document.getElementById('materialInput').click()">
+          <div class="icon">📁</div>
+          <div class="text">上传图片或视频素材（支持多选）</div>
+        </div>
+        <input type="file" id="materialInput" accept="image/*,video/*" multiple onchange="showFileList(this, 'materialFileList')">
+        <div id="materialFileList" class="file-list"></div>
+      </div>
+
+      <div class="form-group">
+        <label>💡 风格偏好（可选）</label>
+        <input type="text" id="preferenceInput" placeholder="如：节奏快一点、偏搞笑、温暖收尾...">
+      </div>
+
+      <button class="btn btn-primary" onclick="doAnalyze()" id="analyzeBtn">
+        🚀 开始分析爆款结构
+      </button>
+    </div>
+  `);
+}
+
+function showFileName(input, listId) {
+  const list = document.getElementById(listId);
+  if (input.files[0]) {
+    list.textContent = `✅ ${input.files[0].name} (${(input.files[0].size/1024/1024).toFixed(1)}MB)`;
+  }
+}
+
+function showFileList(input, listId) {
+  const list = document.getElementById(listId);
+  const names = Array.from(input.files).map(f => f.name).join(', ');
+  list.textContent = names ? `✅ ${input.files.length} 个文件: ${names}` : '';
+}
+
+// ─── Step 1 → 2: Analyze ───
+async function doAnalyze() {
+  const theme = document.getElementById('themeInput').value.trim();
+  if (!theme) { alert('请输入主题描述'); return; }
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 分析中...';
+  setStatus('正在分析爆款结构...');
+
+  S.theme = theme;
+
+  const formData = new FormData();
+  formData.append('session_id', S.sessionId);
+  formData.append('theme', theme);
+
+  const videoFile = document.getElementById('videoInput').files[0];
+  if (videoFile) formData.append('video', videoFile);
+
+  const matFiles = document.getElementById('materialInput').files;
+  for (const f of matFiles) formData.append('materials', f);
+
+  try {
+    const data = await apiForm('/api/analyze', formData);
+    if (data.error) { alert(data.error); btn.disabled = false; btn.textContent = '🚀 开始分析爆款结构'; return; }
+
+    S.state = data.state;
+    renderStep2(data);
+  } catch (e) {
+    alert('请求失败: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '🚀 开始分析爆款结构';
+  }
+}
+
+// ─── Step 2: Structure + Generate Scripts ───
+function renderStep2(analyzeData) {
+  setStep(2);
+  setStatus('分析完成，正在生成剧本...');
+
+  const s = analyzeData.structure;
+  render(`
+    <div class="card">
+      <h2>📊 爆款结构分析</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="structure-card">
+          <div class="label">参考视频</div>
+          <div class="value">${analyzeData.video_name} (${analyzeData.source === 'uploaded' ? '用户上传' : '内置库'})</div>
+        </div>
+        <div class="structure-card">
+          <div class="label">叙事模式</div>
+          <div class="value">${s.narrative_pattern || '—'}</div>
+        </div>
+        <div class="structure-card">
+          <div class="label">情绪曲线</div>
+          <div class="value">${s.emotional_arc || '—'}</div>
+        </div>
+        <div class="structure-card">
+          <div class="label">Hook类型</div>
+          <div class="value">${s.hook_type || '—'}</div>
+        </div>
+      </div>
+      ${s.overall_style ? `<div class="structure-card" style="margin-top:12px"><div class="label">整体风格</div><div class="value">${s.overall_style}</div></div>` : ''}
+    </div>
+
+    <div id="scriptsArea">
+      <div class="loading">
+        <div class="spinner"></div>
+        <span>豆包 Pro 正在生成3个候选剧本...</span>
+      </div>
+    </div>
+  `);
+
+  // 自动触发剧本生成
+  doGenerateScripts();
+}
+
+async function doGenerateScripts() {
+  const preference = document.getElementById('preferenceInput')?.value || '';
+
+  // 显示进度 UI
+  document.getElementById('scriptsArea').innerHTML = `
+    <div class="card">
+      <h2>🎬 并发生成简略剧本中...</h2>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar"></div></div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">
+        🚀 3个版本同时在生成剧情概要（高点击版 / 高共鸣版 / 高节奏版）
+        <br>预计 20-35 秒完成（简略版生成更快）
+      </div>
+      <div id="streamResults"></div>
+    </div>
+  `;
+
+  setStatus('并发生成剧本中...');
+
+  // 使用 SSE 流式接收
+  const streamUrl = `/api/generate-scripts-stream?session_id=${S.sessionId}&preference=${encodeURIComponent(preference)}`;
+  const eventSource = new EventSource(streamUrl);
+  const streamResultsByVersion = {};
+  const versionOrder = ['high_click', 'high_resonance', 'high_tempo'];
+  const badgeClass = { high_click: 'badge-click', high_resonance: 'badge-resonance', high_tempo: 'badge-tempo' };
+  const emoji = { high_click: '🔥', high_resonance: '💗', high_tempo: '⚡' };
+
+  eventSource.addEventListener('progress', (e) => {
+    const data = JSON.parse(e.data);
+    streamResultsByVersion[data.version] = data;
+    const progress = Math.round((Object.keys(streamResultsByVersion).length / 3) * 100);
+    document.getElementById('progressBar').style.width = progress + '%';
+
+    if (data.error) {
+      document.getElementById('streamResults').innerHTML += `
+        <div class="script-stream-card" style="opacity:0.5">
+          <span class="status-icon">⚠️</span>
+          <strong>${data.version_name}</strong> — 生成失败
+          <div style="font-size:12px;color:var(--danger);margin-top:4px">${data.error}</div>
+        </div>`;
+    } else {
+      document.getElementById('streamResults').innerHTML += `
+        <div class="script-stream-card">
+          <span class="status-icon">✅</span>
+          <strong>${emoji[data.version] || ''} ${data.version_name}</strong>: ${data.title}
+          <div style="font-size:12px;color:var(--text2);margin-top:4px">
+            ⏱ ~${data.duration_estimate}s | 🎞 约${data.scene_count_estimate}镜
+          </div>
+          <div style="font-size:12px;color:var(--text2)">🎯 ${(data.hook || '').slice(0,60)}...</div>
+          <div style="font-size:12px;color:var(--accent2);margin-top:4px;line-height:1.5">📖 ${data.brief_summary || ''}</div>
+        </div>`;
+    }
+  });
+
+  eventSource.addEventListener('done', (e) => {
+    const data = JSON.parse(e.data);
+    eventSource.close();
+    setStatus('全部简略剧本已生成，请选择一个');
+    document.getElementById('progressBar').style.width = '100%';
+
+    // 直接渲染简略剧本选择页（数据已通过 SSE progress 事件累积在 streamResults 中）
+    const streamResults = versionOrder
+      .map(version => streamResultsByVersion[version])
+      .filter(Boolean);
+    renderBriefScriptSelection(streamResults, data);
+  });
+
+  eventSource.addEventListener('error', (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      document.getElementById('streamResults').innerHTML += `
+        <div class="script-stream-card" style="border-color:var(--danger)">
+          <span class="status-icon">❌</span> ${data.error}
+        </div>`;
+    } catch (_) {
+      document.getElementById('streamResults').innerHTML += `
+        <div class="script-stream-card" style="border-color:var(--danger)">
+          <span class="status-icon">❌</span> SSE 连接中断，请重试
+        </div>`;
+    }
+    eventSource.close();
+  });
+}
+
+// 简略剧本已在 streamResults 中累积，直接渲染选择页
+function renderBriefScriptSelection(briefScripts, refData) {
+  setStatus('请选择一个剧本（选择后将展开为详细版）');
+  const badgeClass = { high_click: 'badge-click', high_resonance: 'badge-resonance', high_tempo: 'badge-tempo' };
+  const emoji = { high_click: '🔥', high_resonance: '💗', high_tempo: '⚡' };
+
+  // 保存到 S.scripts（简略版）
+  S.scripts = { scripts: briefScripts };
+
+  const cards = briefScripts.map((s, i) => {
+    if (s.error) {
+      return `<div class="script-card" style="opacity:0.5">
+        <span class="badge badge-click">⚠️</span>
+        <div class="title">${s.version_name} — 生成失败</div>
+        <div class="meta">${s.error}</div>
+      </div>`;
+    }
+    return `<div class="script-card" onclick="selectScript(${i}, this)" data-index="${i}">
+      <span class="badge ${badgeClass[s.version] || 'badge-click'}">${emoji[s.version] || ''} ${s.version_name}</span>
+      <div class="title">${s.title}</div>
+      <div class="meta">⏱ 约${s.duration_estimate}秒 | 🎞 约${s.scene_count_estimate}镜</div>
+      <div class="meta">🎯 ${s.hook?.slice(0,80) || ''}</div>
+      <div class="meta">📐 ${s.narrative_arc || ''}</div>
+      <div class="scenes-preview" style="color:var(--accent2);line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+        📖 ${s.brief_summary || ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('scriptsArea').innerHTML = `
+    <div class="card">
+      <h2>🎬 候选剧本（简略版）</h2>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:12px">
+        💡 以下是3个不同风格的<strong>剧情概要</strong>。选择后AI将展开为完整逐镜头剧本并生成分镜。
+      </p>
+      ${refData.reference_video ? `<p style="font-size:13px;color:var(--text2);margin-bottom:12px">📊 参考结构: ${refData.reference_video} | ${refData.reference_narrative || ''}</p>` : ''}
+      <div class="script-grid">${cards}</div>
+      <div class="mt-16 text-center">
+        <button class="btn btn-primary" id="confirmSelectBtn" disabled onclick="confirmSelectScript()">
+          ✅ 选择并展开详细剧本
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+let selectedScriptIndex = -1;
+
+function selectScript(index, el) {
+  selectedScriptIndex = index;
+  $$('.script-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('confirmSelectBtn').disabled = false;
+}
+
+async function confirmSelectScript() {
+  if (selectedScriptIndex < 0) return;
+  const briefScript = S.scripts?.scripts?.[selectedScriptIndex];
+  const versionName = briefScript?.version_name || '';
+
+  setStatus('正在展开详细剧本...');
+  document.getElementById('confirmSelectBtn').disabled = true;
+  document.getElementById('confirmSelectBtn').innerHTML = '<span class="spinner"></span> 展开中...';
+
+  // 显示两阶段进度
+  render(`
+    <div class="card text-center">
+      <h2>📝 正在处理「${versionName}」</h2>
+      <div style="margin:24px 0">
+        <div class="loading">
+          <div class="spinner"></div>
+          <span id="expandStatus">Phase 1/2: 展开详细剧本（生成逐镜头内容）...</span>
+        </div>
+        <div class="progress-bar-wrap" style="margin-top:16px">
+          <div class="progress-bar-fill" id="expandProgressBar" style="width:30%"></div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--text2)">简略剧本 → 详细剧本 → 分镜预览，背景/道具将在生成视频时补齐，预计15-30秒</p>
+    </div>
+  `);
+
+  // 模拟第一阶段进度
+  setTimeout(() => {
+    document.getElementById('expandProgressBar').style.width = '60%';
+    document.getElementById('expandStatus').textContent = 'Phase 2/2: 生成分镜预览（匹配现有素材+检查缺口）...';
+  }, 8000);
+
+  try {
+    const data = await api('/api/select-script', {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id: S.sessionId,
+        script_index: selectedScriptIndex,
+        script_version: briefScript?.version || '',
+      }),
+    });
+    if (data.error) { alert(data.error); return; }
+
+    document.getElementById('expandProgressBar').style.width = '100%';
+    S.storyboard = data;
+    S.state = data.state;
+    renderStep3(data);
+  } catch (e) {
+    alert('请求失败: ' + e.message);
+  }
+}
+
+// ─── Step 3: Storyboard ───
+function renderStep3(data) {
+  setStep(3);
+  setStatus('分镜已生成，可以自然语言调整');
+
+  const scenes = data.scenes || [];
+  const gaps = data.gaps || {};
+
+  const sceneHTML = scenes.map(s => {
+    const stickers = (s.stickers || []).map(st => {
+      const fname = (st.file || '').split('/').pop() || '';
+      return `<span class="tag">🖼️ ${fname}</span>`;
+    }).join('');
+
+    const genAssets = (s.generated_assets || []).map(ga => {
+      if (ga.error) return `<span class="tag" style="color:var(--danger)">⚠️ ${ga.error}</span>`;
+      const fname = (ga.file || '').split('/').pop() || '';
+      return `<span class="tag" style="color:var(--success)">🎨 生成: ${fname}</span>`;
+    }).join('');
+
+    const dialogues = (s.dialogues || []).map(d => {
+      const speaker = d.speaker || '猫';
+      const line = d.line || d.text || d.speech || '';
+      return line ? `<span class="tag">🐾 ${speaker}: ${line}</span>` : '';
+    }).join('');
+
+    const fallbackTag = s.is_fallback ? '<span class="tag" style="color:var(--warning)">🔧 兜底素材</span>' : '';
+
+    return `<div class="scene-item">
+      <div class="scene-num">${s.scene_id}</div>
+      <div class="scene-info">
+        <div class="desc">${s.description} <span style="color:var(--text2);font-weight:400">[${s.duration}秒]</span></div>
+        <div class="detail">
+          <span>🐱 motion#${s.cat_motion_id || '?'} ${(s.cat_motion_desc || '').slice(0,30)}</span>
+          <span>🎭 ${s.emotion || ''}</span>
+          ${s.match_score ? `<span>⭐ 匹配度:${s.match_score}</span>` : ''}
+          ${fallbackTag}
+        </div>
+        ${s.subtitle ? `<div class="subtitle-text">💬 ${s.subtitle}</div>` : ''}
+        ${s.topic_caption ? `<div class="subtitle-text">🏷️ ${s.topic_caption}</div>` : ''}
+        ${s.scene_caption ? `<div class="subtitle-text">✳️ ${s.scene_caption}</div>` : ''}
+        ${dialogues ? `<div class="detail" style="margin-top:4px">${dialogues}</div>` : ''}
+        <div class="detail" style="margin-top:4px">${stickers}${genAssets}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Gaps report
+  let gapsHTML = '';
+  if (gaps.total_gaps > 0) {
+    const gapItems = (gaps.gaps || []).map(g => {
+      const sevClass = { high: 'gap-high', medium: 'gap-medium', low: 'gap-low' };
+      return `<div class="gap-item ${sevClass[g.severity] || 'gap-low'}">
+        ${g.severity === 'high' ? '🔴' : g.severity === 'medium' ? '🟡' : '🟢'}
+        <strong>镜${g.scene_id} [${g.gap_type}]</strong>: ${g.description}
+        <br><span style="color:var(--text2)">→ ${g.fill_strategy}: ${g.fill_detail}</span>
+      </div>`;
+    }).join('');
+    gapsHTML = `
+      <div class="card" style="border-color:var(--warning)">
+        <h3>⚠️ 素材缺口 (${gaps.total_gaps}个)</h3>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:12px">${gaps.fill_summary || ''}</div>
+        ${gapItems}
+      </div>`;
+  }
+
+  const hints = (data.edit_hints || []).map(h => `<span class="hint" onclick="quickEdit('${h}')">${h}</span>`).join('');
+
+  render(`
+    <div class="card">
+      <h2>📋 分镜脚本</h2>
+      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:16px;font-size:13px;color:var(--text2)">
+        <span>📝 ${data.script_title}</span>
+        <span>🏷️ ${data.script_version}</span>
+        <span>⏱ ${data.total_duration}秒</span>
+        <span>🎞 ${data.scene_count}镜</span>
+      </div>
+      <div class="scene-list">${sceneHTML}</div>
+    </div>
+
+    ${gapsHTML}
+
+    <div class="card">
+      <h2>💬 自然语言调整</h2>
+      <div class="edit-panel">
+        <input type="text" id="editInput" placeholder="输入调整指令，如：开头更抓人一些 / 把崩溃镜头提前 / 加个奶茶贴纸..."
+               onkeydown="if(event.key==='Enter')doEdit()">
+        <button class="btn btn-primary" onclick="doEdit()">✏️ 调整</button>
+      </div>
+      <div class="hints">${hints}</div>
+      <div class="edit-history" id="editHistory"></div>
+    </div>
+
+    <div class="text-center mt-16 flex gap-8 justify-center">
+      <button class="btn btn-success" onclick="doGenerateVideo()" id="generateVideoBtn">🎬 生成视频</button>
+      <button class="btn btn-secondary" onclick="doFinalize()">📋 输出分镜方案</button>
+      <button class="btn btn-secondary" onclick="resetAll()">🔄 重新开始</button>
+    </div>
+    <div id="videoProgressArea" class="mt-16"></div>
+  `);
+}
+
+// ─── Video Generation ───
+async function doGenerateVideo() {
+  const btn = document.getElementById('generateVideoBtn');
+  btn.disabled = true;
+  btn.textContent = '🎬 正在合成视频...';
+  setStatus('正在合成视频...');
+
+  const progressArea = document.getElementById('videoProgressArea');
+  progressArea.innerHTML = `
+    <div class="card">
+      <h2>🎬 视频合成中...</h2>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="videoProgressBar" style="width:0%"></div></div>
+      <div id="videoProgressText" style="font-size:13px;color:var(--text2);margin-top:8px">准备中...</div>
+    </div>
+  `;
+
+  // SSE 流式接收进度
+  const streamUrl = `/api/generate-video-stream?session_id=${S.sessionId}`;
+  const eventSource = new EventSource(streamUrl);
+
+  eventSource.addEventListener('progress', (e) => {
+    const data = JSON.parse(e.data);
+    document.getElementById('videoProgressBar').style.width = data.percent + '%';
+    document.getElementById('videoProgressText').textContent =
+      `正在处理镜头 ${data.current}/${data.total} (${data.percent}%)`;
+  });
+
+  eventSource.addEventListener('done', (e) => {
+    const data = JSON.parse(e.data);
+    eventSource.close();
+    S.videoUrl = data.video_url;  // 保存以供最终输出使用
+    btn.textContent = '✅ 视频已生成';
+    btn.classList.remove('btn-success');
+    btn.classList.add('btn-primary');
+
+    progressArea.innerHTML = `
+      <div class="card">
+        <h2>🎉 视频已生成！</h2>
+        <div style="margin:16px 0">
+          <video controls autoplay loop style="width:100%;max-width:760px;border-radius:var(--radius-sm);display:block;margin:0 auto"
+                 poster="">
+            <source src="${data.video_url}" type="video/mp4">
+            你的浏览器不支持视频播放
+          </video>
+        </div>
+        <div style="font-size:13px;color:var(--text2);text-align:center">
+          📁 ${data.video_url} | 📦 ${data.file_size_mb}MB
+        </div>
+        <div class="text-center mt-16">
+          <a href="${data.video_url}" download class="btn btn-primary">💾 下载视频</a>
+        </div>
+      </div>
+    `;
+  });
+
+  eventSource.addEventListener('error', (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      progressArea.innerHTML = `<div class="card" style="color:var(--danger)">❌ 视频合成失败: ${data.error}</div>`;
+    } catch (_) {
+      progressArea.innerHTML = `<div class="card" style="color:var(--danger)">❌ SSE 连接中断</div>`;
+    }
+    eventSource.close();
+    btn.disabled = false;
+    btn.textContent = '🎬 重试生成视频';
+  });
+}
+
+async function doEdit() {
+  const input = document.getElementById('editInput');
+  const instruction = input.value.trim();
+  if (!instruction) return;
+
+  input.disabled = true;
+  setStatus('正在调整分镜...');
+
+  try {
+    const data = await api('/api/edit', {
+      method: 'POST',
+      body: JSON.stringify({ session_id: S.sessionId, instruction }),
+    });
+    if (data.error) { alert(data.error); input.disabled = false; return; }
+
+    S.storyboard = data;
+    renderStep3(data);
+    document.getElementById('editInput').value = '';
+
+    // Show edit history
+    if (data.edit_history) {
+      const histHTML = data.edit_history.map(h =>
+        `<div class="history-item">✏️ "${h.instruction}" → ${h.explanation}</div>`
+      ).join('');
+      document.getElementById('editHistory').innerHTML = histHTML;
+    }
+  } catch (e) {
+    alert('请求失败: ' + e.message);
+  } finally {
+    input.disabled = false;
+    input.focus();
+  }
+}
+
+function quickEdit(hint) {
+  document.getElementById('editInput').value = hint;
+  doEdit();
+}
+
+// ─── Step 4: Final Output ───
+async function doFinalize() {
+  setStep(4);
+  setStatus('输出最终方案');
+
+  try {
+    const data = await api('/api/finalize', {
+      method: 'POST',
+      body: JSON.stringify({ session_id: S.sessionId }),
+    });
+    if (data.error) { alert(data.error); return; }
+    renderFinal(data);
+  } catch (e) {
+    alert('请求失败: ' + e.message);
+  }
+}
+
+function renderFinal(data) {
+  const scenes = data.scenes || [];
+  const sceneHTML = scenes.map(s => `
+    <div class="scene-item">
+      <div class="scene-num">${s.scene_id}</div>
+      <div class="scene-info">
+        <div class="desc">${s.description} [${s.duration}秒]</div>
+        <div class="detail">
+          <span>🐱 motion#${s.cat_motion_id || '?'}</span>
+          <span>🎭 ${s.emotion || ''}</span>
+        </div>
+        ${s.subtitle ? `<div class="subtitle-text">💬 ${s.subtitle}</div>` : ''}
+        ${s.scene_caption ? `<div class="subtitle-text">✳️ ${s.scene_caption}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  // 检查是否有视频已生成
+  let videoHTML = '';
+  if (S.videoUrl) {
+    videoHTML = `
+    <div class="card">
+      <h2>🎬 最终视频</h2>
+      <div style="margin:16px 0">
+        <video controls style="width:100%;max-width:760px;border-radius:var(--radius-sm);display:block;margin:0 auto">
+          <source src="${S.videoUrl}" type="video/mp4">
+        </video>
+      </div>
+      <div class="text-center">
+        <a href="${S.videoUrl}" download class="btn btn-primary">💾 下载视频</a>
+      </div>
+    </div>`;
+  }
+
+  const assets = (data.asset_list || []).map(a => {
+    const genAssets = (a.generated_assets || []).map(ga => {
+      if (ga.error) return `<li>⚠️ 生成失败: ${ga.error}</li>`;
+      return `<li>🎨 ${(ga.file || '').split('/').pop()}</li>`;
+    }).join('');
+    return `<div style="font-size:13px;margin-bottom:4px">
+      🎞 镜${a.scene_id}: motion#${a.cat_motion_id} ${genAssets}
+    </div>`;
+  }).join('');
+
+  render(`
+    <div class="card">
+      <h2>🎉 最终方案已生成</h2>
+      <div class="output-summary">
+        <div class="output-stat"><div class="num">${data.scene_count}</div><div class="label">镜头数</div></div>
+        <div class="output-stat"><div class="num">${data.total_duration}s</div><div class="label">总时长</div></div>
+        <div class="output-stat"><div class="num">${data.script_version}</div><div class="label">版本</div></div>
+        <div class="output-stat"><div class="num">✅</div><div class="label">已保存</div></div>
+      </div>
+      <p style="font-size:14px;margin-bottom:8px"><strong>主题:</strong> ${data.theme}</p>
+      <p style="font-size:14px;margin-bottom:8px"><strong>剧本:</strong> ${data.script_title}</p>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:16px">输出文件: ${data.output_file}</p>
+    </div>
+
+    <div class="card">
+      <h2>📋 完整分镜</h2>
+      <div class="scene-list">${sceneHTML}</div>
+    </div>
+
+    <div class="card">
+      <h2>📦 素材清单</h2>
+      ${assets}
+    </div>
+
+    <div class="text-center mt-16">
+      <button class="btn btn-primary" onclick="resetAll()">🔄 创建新视频</button>
+    </div>
+    ${videoHTML}
+  `);
+}
+
+// ─── Reset ───
+function resetAll() {
+  if (!confirm('确定要开始创建新视频吗？\n\n当前方案已自动保存，可以在 assets/generated/output/ 中找到。')) {
+    return;
+  }
+  api('/api/reset', { method: 'POST', body: JSON.stringify({ session_id: S.sessionId }) });
+  S.sessionId = '';
+  S.state = 'IDLE';
+  S.theme = '';
+  S.scripts = null;
+  S.selectedScript = null;
+  S.storyboard = null;
+  S.videoUrl = null;
+  selectedScriptIndex = -1;
+  // 重新创建 session
+  api('/api/session', { method: 'POST' }).then(d => { S.sessionId = d.session_id; });
+  renderStep1();
+  // 滚动到顶部
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── Init ───
+async function init() {
+  const data = await api('/api/session', { method: 'POST' });
+  S.sessionId = data.session_id;
+  S.state = data.state;
+  renderStep1();
+}
+
+init();
+</script>
+</body>
+</html>

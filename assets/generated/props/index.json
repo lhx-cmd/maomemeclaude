@@ -1,0 +1,88 @@
+{
+  "asset_kind": "prop",
+  "folder": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props",
+  "count": 9,
+  "assets": [
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_11_prop.png",
+      "description": "",
+      "prompt": "A cute cartoon prop of 奶茶杯, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "revised_prompt": "A cute cartoon prop of 奶茶杯, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "size": "1920x1920",
+      "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
+      "generated_at": "2026-06-07T11:17:53"
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_1_prop.png",
+      "description": "",
+      "prompt": "A cute cartoon prop of 闹铃, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "revised_prompt": "A cute cartoon prop of 闹铃, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "size": "1920x1920",
+      "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
+      "generated_at": "2026-06-07T11:00:30"
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_2_prop.png",
+      "description": "",
+      "prompt": "A cute cartoon prop of 汽车方向盘, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "revised_prompt": "A cute cartoon prop of 汽车方向盘, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "size": "1920x1920",
+      "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
+      "generated_at": "2026-06-07T11:16:26"
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_5_prop.png",
+      "description": "",
+      "prompt": "A cute cartoon prop of 工牌, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "revised_prompt": "A cute cartoon prop of 工牌, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "size": "1920x1920",
+      "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
+      "generated_at": "2026-06-07T11:17:15"
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_8_prop.png",
+      "description": "",
+      "prompt": "A cute cartoon prop of 手机到账通知, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "revised_prompt": "A cute cartoon prop of 手机到账通知, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "size": "1920x1920",
+      "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
+      "generated_at": "2026-06-07T11:05:10"
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_7_prop.png",
+      "description": "冰美式",
+      "prompt": "A cute cartoon prop of 冰美式, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "revised_prompt": "A cute cartoon prop of 冰美式, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "size": "1920x1920",
+      "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
+      "generated_at": "2026-06-07T22:01:20"
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_6_prop.png",
+      "description": "办公键盘",
+      "prompt": "A cute cartoon prop of 办公键盘, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "revised_prompt": "A cute cartoon prop of 办公键盘, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "size": "1920x1920",
+      "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
+      "generated_at": "2026-06-08T12:06:00"
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_3_prop.png",
+      "description": "手机闹钟",
+      "prompt": "A cute cartoon prop of 手机闹钟, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "revised_prompt": "A cute cartoon prop of 手机闹钟, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "size": "1920x1920",
+      "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
+      "generated_at": "2026-06-08T12:06:04"
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_4_prop.png",
+      "description": "键盘",
+      "prompt": "A cute cartoon prop of 键盘, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "revised_prompt": "A cute cartoon prop of 键盘, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "size": "1920x1920",
+      "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
+      "generated_at": "2026-06-07T22:01:23"
+    }
+  ]
+}

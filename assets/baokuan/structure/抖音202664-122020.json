@@ -1,0 +1,98 @@
+{
+  "video_name": "抖音202664-122020.mp4",
+  "script_structure": {
+    "hook": {
+      "time_range": [
+        0,
+        2
+      ],
+      "type": "反转+共鸣",
+      "description": "开头直接抛出反常识观点，打破大众对“无用行为”的刻板印象，立刻抓取用户注意力"
+    },
+    "development": [
+      {
+        "time_range": [
+          2,
+          4
+        ],
+        "type": "举例",
+        "description": "介绍第一种行为：爱买没用的小玩意，点明这类物品能提供情绪价值的作用"
+      },
+      {
+        "time_range": [
+          4,
+          6
+        ],
+        "type": "举例",
+        "description": "介绍第二种行为：时不时吃甜的，传递开心最重要的生活态度"
+      },
+      {
+        "time_range": [
+          6,
+          9
+        ],
+        "type": "举例",
+        "description": "介绍第三种行为：爱睡懒觉，还原年轻人睡懒觉被家人指责的日常场景"
+      },
+      {
+        "time_range": [
+          9,
+          12
+        ],
+        "type": "举例+递进",
+        "description": "介绍第四种行为：偶尔享受独处，展现不被外界琐事打扰的松弛状态"
+      }
+    ],
+    "climax": {
+      "time_range": [
+        12,
+        14
+      ],
+      "type": "爽感+好笑",
+      "description": "抛出闺蜜反复复合自己不掺和的独处细节，精准戳中当代年轻人不想管他人闲事的爽点，笑点和共鸣拉满"
+    },
+    "cta": {
+      "time_range": [
+        14,
+        16
+      ],
+      "type": "互动引导",
+      "description": "开放式收尾，引导观众在评论区分享自己的同款健康“怪”行为"
+    }
+  },
+  "rhythm_structure": {
+    "shot_frequency": "高",
+    "tempo_curve": "快-更快",
+    "climax_position": 0.75
+  },
+  "packaging_structure": {
+    "subtitle_style": "顶部固定黄底加粗黑字大标题，分类标题为白色粗黑描边字体，对话类字幕用蓝/粉/绿等彩色字体加黑描边，分布在对应画面的上下方，醒目易读",
+    "sticker_types": [
+      "猫meme表情包",
+      "手势emoji贴纸",
+      "物品素材贴纸"
+    ],
+    "sticker_density": "高",
+    "transitions": [
+      "无特效硬切"
+    ],
+    "cover_style": "黄底醒目反常识标题搭配猫meme和场景素材，第一眼就传递内容核心，抓眼度高"
+  },
+  "narrative_pattern": "抛出反常识观点→多场景生活化举例验证→强共鸣梗点收尾升华",
+  "emotional_arc": "好奇→强烈共鸣→好笑→爽感→会心认同",
+  "cat_motion_sequence": [
+    "摇头晃脑开心",
+    "歪头拽无所谓",
+    "躺在床上被骂伸手喊妈",
+    "戴耳机喝奶茶瘫坐",
+    "拿手机一脸淡定"
+  ],
+  "overall_style_summary": "该视频是短平快的网络梗类内容爆款，以反常识的“看似不正常实则有益心理健康”的观点为切入点，搭配年轻人熟知的热门猫meme素材，每2秒一个强共鸣的生活化场景，全程无说教感，轻松搞笑的同时让观众产生极强的代入感，极易引发用户的评论互动和转发。",
+  "_meta": {
+    "analyzed_at": "2026-06-06T21:55:03",
+    "duration_seconds": 15.566667,
+    "file_size_mb": 1.16,
+    "frames_analyzed": 7,
+    "model": "doubao-seed-2-0-pro-260215"
+  }
+}

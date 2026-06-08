@@ -1,0 +1,69 @@
+# ─── Secrets & Environment ───
+.env
+*.pem
+*.key
+credentials.json
+service-account.json
+
+# ─── Python ───
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+*.whl
+
+# ─── Virtual Environment ───
+venv/
+.venv/
+env/
+.envrc
+*.virtualenv
+
+# ─── IDE & Editor ───
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── Generated Output ───
+assets/generated/output/
+assets/generated/uploads/
+assets/generated/tmp/
+assets/generated/*.mp4
+assets/generated/*.png
+assets/generated/*.jpg
+
+# ─── Uploads ───
+assets/generated/uploads/
+
+# ─── Claude Code ───
+.claude/
+.claude.json
+
+# ─── Temporary Files ───
+/tmp/
+*.tmp
+*.temp
+*.log
+/tmp/
+
+# ─── OS Files ───
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# ─── Large Assets (optional: remove these lines if you want to track assets) ───
+# Uncomment to exclude large asset files from git:
+# assets/cat-motions/*.mp4
+# assets/baokuan/raw/*.mp4
