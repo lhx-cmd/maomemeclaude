@@ -11,11 +11,12 @@
 - **LangGraph 局部编排**：主流程使用 LangGraph 做单次请求内的粗粒度编排，保留现有 Flask 内存 session，不引入持久化 checkpoint。
 - **HyperFrames 画面包装**：支持顶部主题条、分镜解释字幕、猫头台词、多猫互动和底部吐槽字幕。
 - **多猫角色选择**：模型根据 speaker、台词、情绪和剧情选择不同猫动作素材，避免简单复制同一只猫。
+- **用户猫素材优先**：用户上传猫 meme 视频会先被分析成与本地 `assets/cat-motions/descriptions.json` 相同风格的动作/情绪/场景标签，剧本和分镜优先使用用户素材，本地素材只做补充。
 - **贴纸/道具审核**：贴纸只在剧情需要时出现，并尽量放在猫爪、桌面、通知区等合理位置。
 - **素材缺口补全**：检测背景、道具、猫动作、贴纸等缺口；视频生成阶段再调用 Seedream 补齐昂贵素材。
 - **生成素材沉淀复用**：Seedream 生成的背景、道具、贴纸会写入 metadata 和 `index.json`，后续可按描述复用。
-- **猫 Meme 音频素材库**：猫动作视频的原声音轨会抽取到 `assets/audio/cat-motions/`，并生成带描述和标签的 `index.json`。
-- **FFmpeg 视频合成**：输出 1920x1080、16:9 MP4，包含绿幕抠像、背景、猫动作、贴纸、字幕和多猫布局。
+- **猫 Meme 默认音频**：本地猫动作 `motion#N` 默认使用 `assets/audio/cat-motions/cat_motion_N.m4a`；用户上传猫视频默认使用上传视频原声。同一音频重复出现在多个分镜时会从上次位置继续播放，避免卡顿式循环。
+- **FFmpeg 视频合成**：输出 1920x1080、16:9 MP4，包含绿幕抠像、背景、猫动作、贴纸、字幕、多猫布局和分镜音频。
 - **自然语言编辑**：支持用中文指令调整分镜，例如“开头更抓人”“把崩溃镜头提前”“加个奶茶贴纸”。
 
 ## 技术架构
@@ -38,6 +39,7 @@ LangGraph 单次请求编排
   |-- 豆包文本/视觉模型
   |-- Seedream 图像生成
   |-- 素材匹配和复用索引
+  |-- 默认音频分配和连续播放游标
   |-- HyperFrames 布局
   |-- FFmpeg 合成
 ```
@@ -58,6 +60,8 @@ maomemeclaude/
 │   ├── storyboard_generator.py  # 分镜生成、缺口填充、素材审核
 │   ├── cat_role_planner.py      # 多猫角色动作选择
 │   ├── dialogue_enricher.py     # 多猫台词和互动规划
+│   ├── user_material_library.py  # 用户上传素材分析和猫动作目录构建
+│   ├── audio_asset_library.py    # 猫动作默认音频索引和查找
 │   ├── hyperframe_layout.py     # HyperFrames 字幕/猫位布局
 │   ├── composition_planner.py   # 贴纸/道具安全位置规划
 │   ├── material_matcher.py      # 猫动作和贴纸匹配
@@ -139,16 +143,16 @@ http://localhost:8080
 ## 使用流程
 
 1. **输入主题**
-   填写要迁移的主题，可上传参考视频或补充素材。
+   填写要迁移的主题，可上传参考视频或补充素材。上传的猫 meme 视频会作为“用户猫动作素材”进入用户素材库。
 
 2. **生成并选择候选剧本**
    系统并发生成 3 个简略剧本。选择一个后，系统展开详细剧本并生成分镜预览。
 
 3. **检查和调整分镜**
-   查看猫动作、背景、台词、贴纸、缺口报告和素材匹配结果。可以用自然语言继续调整。
+   查看猫动作、背景、台词、贴纸、音频、缺口报告和素材匹配结果。可以用自然语言继续调整。
 
 4. **生成视频**
-   生成阶段会补齐必要背景/道具，复用已有素材库，最后合成 16:9 MP4。
+   生成阶段会补齐必要背景/道具，复用已有素材库，并按分镜绑定默认音频，最后合成 16:9 MP4。
 
 ## 输出规格
 
@@ -165,8 +169,9 @@ http://localhost:8080
 | 类型 | 说明 |
 | --- | --- |
 | 爆款结构 | 内置 5 个参考视频及结构分析 JSON |
-| 猫动作素材 | 26 个 MP4，带动作、情绪、场景标签 |
-| 猫原声音频 | 从猫动作 MP4 抽取的 M4A，带源视频、描述、标签索引 |
+| 猫动作素材 | 30 个 MP4，带动作、情绪、场景标签 |
+| 用户猫动作素材 | 用户上传视频会被分析为动作/情绪/适用场景标签，并优先参与剧本和分镜 |
+| 猫原声音频 | 从猫动作 MP4 抽取的 M4A，按 `motion#N` 默认绑定 `cat_motion_N.m4a` |
 | 贴纸素材 | 多分类 PNG/JPG 素材库 |
 | 生成背景 | `assets/generated/backgrounds/index.json` 汇总描述 |
 | 生成道具 | `assets/generated/props/index.json` 汇总描述 |
@@ -180,7 +185,18 @@ http://localhost:8080
   ```bash
   python3 scripts/rebuild_audio_assets.py --force
   ```
-- 后续生成时优先按描述匹配已有素材，减少重复调用 Seedream。
+- 用户上传猫视频素材优先用于剧本和分镜；用户素材不足时再使用本地猫动作素材补充。
+- 本地猫动作音频不做语义乱选：`motion#N` 默认使用 `cat_motion_N.m4a`。
+- 同一个默认音频在多个分镜里重复使用时，会记录 `audio_start_offset` 并从上次位置继续播放；音频用尽后静音补足，避免从头循环造成卡顿。
+- 后续生成时优先按描述匹配已有背景/道具素材，减少重复调用 Seedream。
+
+## 音频策略
+
+- **用户上传猫视频**：默认使用该上传视频的原声。
+- **本地猫动作**：默认使用 `assets/audio/cat-motions/cat_motion_{motion_id}.m4a`。
+- **重复素材**：同一音频文件跨分镜复用时，分镜生成阶段会累计播放游标，写入 `audio_start_offset` 和 `audio_duration`。
+- **边界处理**：视频合成阶段会按 offset 裁切音频，统一为 44.1kHz stereo，并加极短淡入淡出，降低镜头切换处的顿挫感。
+- **兜底策略**：默认音频不存在时使用当前猫动作视频原声；音频不可用或已播完时使用静音轨；`audio_muted=true` 时强制静音。
 
 ## API 概览
 
@@ -197,10 +213,19 @@ http://localhost:8080
 | `/api/generate-video-stream` | GET | SSE 合成视频 |
 | `/api/reset` | POST | 重置会话 |
 
+分镜相关接口返回的 `scenes` 会包含音频字段：
+
+- `audio_source`：`cat_motion_audio`、`motion_original` 或 `silent`
+- `audio_file`：实际使用的音频或视频文件
+- `audio_motion_id`：音频对应的猫动作 ID
+- `audio_start_offset`：该分镜从音频文件的哪个时间点开始播放
+- `audio_duration`：音频文件总时长
+- `use_motion_audio` / `audio_muted`：是否播放音频、是否强制静音
+
 ## 测试
 
 ```bash
-python3 -m unittest discover -v
+python3 -m pytest -q
 python3 -m py_compile server.py agent/*.py
 ```
 
@@ -213,6 +238,7 @@ python3 -m py_compile server.py agent/*.py
 - 贴纸/道具位置规划
 - Seedream 素材复用和并发
 - FFmpeg filter graph 和失败日志
+- 默认音频绑定、重复音频连续播放和静音兜底
 - SSE terminal event 不丢失
 
 ## 开发说明
