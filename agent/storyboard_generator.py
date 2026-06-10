@@ -4,18 +4,20 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
+import re
 import time
 from pathlib import Path
 from typing import Any, Optional
 
 from .config import config
 from .doubao_client import client
-from .material_matcher import match_cat_motion, match_stickers
+from .material_matcher import match_cat_motion, match_stickers, match_user_materials
 from .gap_detector import detect_gaps, format_gaps_for_display
 from .seedream_client import seedream
-from .generated_asset_library import write_asset_meta
+from .generated_asset_library import find_reusable_asset, write_asset_meta
 from .cat_role_planner import assign_cat_role_motions, apply_cat_role_decisions
 from .dialogue_enricher import enrich_hyperframe_dialogues
+from .user_material_library import build_user_motion_catalog
 from .utils import load_cat_motions
 
 
@@ -23,6 +25,10 @@ MAX_STORYBOARD_SCENES = 8
 MIN_SCENE_DURATION = 3
 DEFAULT_SCENE_DURATION = 4
 MAX_SCENE_DURATION = 5
+CAT_APPEARANCE_PATTERN = re.compile(
+    r"(?:[\u4e00-\u9fff]{0,4}(?:衣|帽|衫|袍|装|西装|校服|工牌|围裙|睡衣|蓝衣|红衣|黄衣|绿衣|黑衣|白衣)?"
+    r"[\u4e00-\u9fff]{0,3}(?:灰|白|黑|橘|黄|棕|狸花|三花|奶牛|蓝|红|绿|胖|瘦|大|小)猫)"
+)
 STICKER_SCENE_KEYWORDS = (
     "消息", "@", "聊天", "通知", "手机", "电脑", "弹窗", "群", "微信", "ddl", "考试", "作业",
     "补考", "试卷", "翻书", "书", "笔", "奶茶", "外卖", "迟到", "闹钟", "会议", "老板",
@@ -102,6 +108,7 @@ STORYBOARD_AI_PLANNING_PROMPT = """你是猫meme短视频的分镜 AI 编排导�
 - 当剧情出现朋友、同事、领导、老师、室友、客户、群消息、请求、催促、回应、争辩等关系时，优先安排 2-3 只不同猫形成互动。
 - 不要每镜都强塞多猫；独白、强反应、转场、情绪落点可以保持一只猫。
 - 多猫同屏时，不是复制同一只猫；不同 speaker 要根据身份、台词、情绪选择不同 motion_id。
+- 如果 motion_catalog 中存在 motion_id 以 user: 开头或 source=user 的用户上传猫动作素材，必须优先从这些用户素材中为角色选动作；只有用户素材不适合当前剧情时，才选择本地素材补充。
 - motion_catalog 中描述或 tags 含“双猫/两只猫/画面中有两只猫/多只猫”的素材代表素材本身已有多只猫，不要分配给单个 dialogue 角色。
 - 同一镜头内不要给多个 dialogue 角色选择同一个 motion_id；如果找不到不同动作素材，就减少 dialogue 数量，不要复制同一只猫。
 - 只能从 motion_catalog 中选择 motion_id，不能编造。
@@ -136,6 +143,8 @@ def generate_storyboard(
     theme: str,
     auto_fill_gaps: bool = True,
     review_materials: bool = False,
+    custom_materials: Optional[list[str]] = None,
+    custom_material_index: Optional[dict] = None,
 ) -> dict:
     """从选定的剧本生成详细分镜脚本。
 
@@ -183,6 +192,7 @@ def generate_storyboard(
     for scene in scenes_data:
         scene_id = scene.get("scene_id", len(storyboard_scenes) + 1)
         desc = scene.get("description", "")
+        desc = _neutralize_fixed_cat_appearance(desc)
         emotion = scene.get("emotion", "")
         suggested_motion = scene.get("suggested_cat_motion", "")
         suggested_stickers = scene.get("suggested_stickers", [])
@@ -249,6 +259,8 @@ def generate_storyboard(
             for i, s in enumerate(matched_stickers)
         ]
 
+        _apply_user_material_matches(storyboard_scene, custom_materials, custom_material_index)
+
         storyboard_scenes.append(storyboard_scene)
 
     roles_already_assigned = False
@@ -257,7 +269,13 @@ def generate_storyboard(
             scenes=storyboard_scenes,
             theme=theme,
             script_title=selected_script.get("title", ""),
+            user_motion_catalog=build_user_motion_catalog(custom_material_index),
         )
+
+    _sync_storyboard_cat_motion_fields(storyboard_scenes)
+    user_motion_bindings = _collect_user_motion_bindings(storyboard_scenes)
+
+    _attach_reusable_generated_assets(storyboard_scenes)
 
     # 检测素材缺口
     gap_report = detect_gaps(storyboard_scenes)
@@ -272,7 +290,11 @@ def generate_storyboard(
         gap_report=gap_report,
         auto_fill_gaps=auto_fill_gaps,
         review_materials=needs_role_assignment,
+        user_motion_catalog=build_user_motion_catalog(custom_material_index),
     )
+
+    _restore_user_motion_bindings(storyboard_scenes, user_motion_bindings)
+    _sync_storyboard_cat_motion_fields(storyboard_scenes)
 
     return {
         "theme": theme,
@@ -306,6 +328,8 @@ def fill_storyboard_gaps_for_video(storyboard: dict) -> dict:
             auto_fill_gaps=True,
             review_materials=needs_role_assignment,
         )
+
+    _sync_storyboard_cat_motion_fields(scenes)
 
     updated = dict(storyboard)
     updated["scenes"] = scenes
@@ -365,6 +389,7 @@ def _review_and_enrich_storyboard(
     script_title: str,
 ) -> list[dict]:
     """Run independent text review passes concurrently and merge their fields."""
+    user_motion_bindings = _collect_user_motion_bindings(scenes)
     with ThreadPoolExecutor(max_workers=2) as executor:
         review_future = executor.submit(_review_storyboard_materials, _copy_scenes(scenes), theme)
         dialogue_future = executor.submit(
@@ -376,21 +401,25 @@ def _review_and_enrich_storyboard(
         reviewed_scenes = review_future.result()
         dialogue_scenes = dialogue_future.result()
 
-    return _merge_dialogue_fields(
+    merged = _merge_dialogue_fields(
         base_scenes=reviewed_scenes,
         dialogue_scenes=dialogue_scenes,
     )
+    _restore_user_motion_bindings(merged, user_motion_bindings)
+    return merged
 
 
 def _review_enrich_and_assign_storyboard(
     scenes: list[dict],
     theme: str,
     script_title: str,
+    user_motion_catalog: Optional[dict[str, Any]] = None,
 ) -> tuple[list[dict], bool]:
     """Use one model pass for material review, dialogue planning, and role motions."""
     if not scenes:
         return scenes, True
-    catalog = load_cat_motions()
+    user_motion_bindings = _collect_user_motion_bindings(scenes)
+    catalog = _combined_planning_catalog(user_motion_catalog)
     try:
         review = client.chat_json(
             system_prompt=STORYBOARD_AI_PLANNING_PROMPT,
@@ -411,7 +440,9 @@ def _review_enrich_and_assign_storyboard(
         return scenes, False
     _apply_material_decisions(scenes, decisions)
     _apply_dialogue_decisions(scenes, decisions)
+    _restore_user_motion_bindings(scenes, user_motion_bindings)
     apply_cat_role_decisions(scenes, decisions, catalog)
+    _restore_user_motion_bindings(scenes, user_motion_bindings)
     return scenes, True
 
 
@@ -453,6 +484,14 @@ def _build_storyboard_ai_planning_payload(
     }
 
 
+def _combined_planning_catalog(user_motion_catalog: Optional[dict[str, Any]]) -> dict[str, Any]:
+    catalog: dict[str, Any] = {}
+    if user_motion_catalog:
+        catalog.update(user_motion_catalog)
+    catalog.update(load_cat_motions())
+    return catalog
+
+
 def _compact_motion_catalog_for_planning(
     scenes: list[dict],
     theme: str,
@@ -465,9 +504,29 @@ def _compact_motion_catalog_for_planning(
         return []
 
     pinned_ids = _pinned_motion_ids_for_scenes(scenes)
+    selected: list[tuple[str, dict]] = []
+    seen = set()
+    user_items = [
+        (motion_id, data)
+        for motion_id, data in catalog.items()
+        if _is_user_motion_catalog_entry(motion_id, data)
+    ]
+    user_items.sort(key=lambda item: _motion_catalog_sort_key(item[0]))
+    for motion_id, data in user_items:
+        if motion_id in seen:
+            continue
+        selected.append((motion_id, data))
+        seen.add(motion_id)
+        if len(selected) >= max_items:
+            break
+    if len(selected) >= max_items:
+        return _serialize_compact_motion_catalog(selected)
+
     scored: list[tuple[int, int, str, dict]] = []
     search_text = _planning_search_text(scenes, theme, script_title)
     for motion_id, data in catalog.items():
+        if motion_id in seen:
+            continue
         score = _planning_motion_score(motion_id, data, search_text, pinned_ids)
         try:
             numeric_id = int(motion_id)
@@ -476,8 +535,6 @@ def _compact_motion_catalog_for_planning(
         scored.append((score, -numeric_id, str(motion_id), data))
 
     scored.sort(reverse=True)
-    selected: list[tuple[str, dict]] = []
-    seen = set()
     for _, _, motion_id, data in scored:
         if motion_id in seen:
             continue
@@ -486,6 +543,10 @@ def _compact_motion_catalog_for_planning(
         if len(selected) >= max_items:
             break
 
+    return _serialize_compact_motion_catalog(selected)
+
+
+def _serialize_compact_motion_catalog(selected: list[tuple[str, dict]]) -> list[dict[str, Any]]:
     return [
         {
             "motion_id": motion_id,
@@ -494,6 +555,25 @@ def _compact_motion_catalog_for_planning(
         }
         for motion_id, data in selected
     ]
+
+
+def _is_user_motion_catalog_entry(motion_id: Any, data: Any) -> bool:
+    if str(motion_id).startswith("user:"):
+        return True
+    return isinstance(data, dict) and data.get("source") == "user"
+
+
+def _motion_catalog_sort_key(motion_id: Any) -> tuple[int, int, str]:
+    text = str(motion_id)
+    if text.startswith("user:"):
+        try:
+            return (0, int(text.split(":", 1)[1]), text)
+        except (TypeError, ValueError):
+            return (0, 999, text)
+    try:
+        return (1, int(text), text)
+    except (TypeError, ValueError):
+        return (2, 0, text)
 
 
 def _pinned_motion_ids_for_scenes(scenes: list[dict]) -> set[str]:
@@ -572,6 +652,7 @@ def _fill_gaps_and_assign_roles(
     gap_report: dict,
     auto_fill_gaps: bool,
     review_materials: bool,
+    user_motion_catalog: Optional[dict[str, Any]] = None,
 ) -> list[dict]:
     """Run AIGC gap filling and role motion selection concurrently when possible."""
     if not auto_fill_gaps and not review_materials:
@@ -579,14 +660,21 @@ def _fill_gaps_and_assign_roles(
     if auto_fill_gaps and not review_materials:
         return _auto_fill_gaps(scenes, gap_report)
     if review_materials and not auto_fill_gaps:
-        return assign_cat_role_motions(scenes)
+        return _assign_cat_role_motions(scenes, user_motion_catalog)
     if _has_cat_motion_gap(gap_report):
         filled_scenes = _auto_fill_gaps(scenes, gap_report)
-        return assign_cat_role_motions(filled_scenes)
+        return _assign_cat_role_motions(filled_scenes, user_motion_catalog)
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         fill_future = executor.submit(_auto_fill_gaps, _copy_scenes(scenes), gap_report)
-        roles_future = executor.submit(assign_cat_role_motions, _copy_scenes(scenes))
+        if user_motion_catalog:
+            roles_future = executor.submit(
+                assign_cat_role_motions,
+                _copy_scenes(scenes),
+                user_motion_catalog=user_motion_catalog,
+            )
+        else:
+            roles_future = executor.submit(assign_cat_role_motions, _copy_scenes(scenes))
         filled_scenes = fill_future.result()
         role_scenes = roles_future.result()
 
@@ -594,6 +682,15 @@ def _fill_gaps_and_assign_roles(
         base_scenes=filled_scenes,
         role_scenes=role_scenes,
     )
+
+
+def _assign_cat_role_motions(
+    scenes: list[dict],
+    user_motion_catalog: Optional[dict[str, Any]] = None,
+) -> list[dict]:
+    if user_motion_catalog:
+        return assign_cat_role_motions(scenes, user_motion_catalog=user_motion_catalog)
+    return assign_cat_role_motions(scenes)
 
 
 def _has_cat_motion_gap(gap_report: dict) -> bool:
@@ -646,9 +743,9 @@ def _gap_already_filled(scene: dict, gap: dict) -> bool:
     if gap_type == "背景缺失":
         if scene.get("background_file") or scene.get("background"):
             return True
-        return any("背景" in str(asset.get("type", "")) for asset in scene.get("generated_assets", []))
+        return any(_asset_fills_gap(asset, "background") for asset in scene.get("generated_assets", []))
     if gap_type == "道具缺失":
-        return any("道具" in str(asset.get("type", "")) for asset in scene.get("generated_assets", []))
+        return any(_asset_fills_gap(asset, "prop") for asset in scene.get("generated_assets", []))
     if gap_type == "猫动作缺失":
         return bool(scene.get("cat_motion_id"))
     if gap_type == "贴纸不足":
@@ -656,8 +753,292 @@ def _gap_already_filled(scene: dict, gap: dict) -> bool:
     return False
 
 
+def _asset_fills_gap(asset: dict, kind: str) -> bool:
+    if not isinstance(asset, dict) or not asset.get("file"):
+        return False
+    asset_type = str(asset.get("type", ""))
+    if kind == "background":
+        return "背景" in asset_type or asset.get("kind") == "background"
+    if kind == "prop":
+        return "道具" in asset_type or asset.get("kind") == "prop"
+    return False
+
+
 def _copy_scenes(scenes: list[dict]) -> list[dict]:
     return json.loads(json.dumps(scenes, ensure_ascii=False))
+
+
+def _collect_user_motion_bindings(scenes: list[dict]) -> dict[Any, dict[str, str]]:
+    """Remember uploaded cat motion bindings before model rewrites scene text."""
+    bindings: dict[Any, dict[str, str]] = {}
+    for index, scene in enumerate(scenes):
+        binding = _user_motion_binding_for_scene(scene)
+        if binding:
+            bindings[_scene_binding_key(scene, index)] = binding
+    return bindings
+
+
+def _scene_binding_key(scene: dict, index: int) -> Any:
+    scene_id = scene.get("scene_id")
+    if scene_id is None or scene_id == "":
+        return f"idx:{index}"
+    return scene_id
+
+
+def _user_motion_binding_for_scene(scene: dict) -> Optional[dict[str, str]]:
+    user_dialogues = [
+        (index, dialogue)
+        for index, dialogue in enumerate(scene.get("dialogues", []) or [])
+        if isinstance(dialogue, dict)
+        and str(dialogue.get("line") or "").strip()
+        and dialogue.get("motion_binding") != "auto_user_match"
+        and (
+            dialogue.get("motion_source") == "user"
+            or str(dialogue.get("motion_id") or "").strip() == "user"
+        )
+        and str(dialogue.get("motion_file") or scene.get("cat_motion_file") or "").strip()
+    ]
+    if user_dialogues:
+        dialogue_index, dialogue = user_dialogues[0]
+        file_path = str(dialogue.get("motion_file") or scene.get("cat_motion_file") or "").strip()
+        return {
+            "motion_id": str(dialogue.get("motion_id") or scene.get("cat_motion_id") or "user"),
+            "file": file_path,
+            "desc": str(dialogue.get("motion_desc") or scene.get("cat_motion_desc") or Path(file_path).name).strip(),
+            "speaker": str(dialogue.get("speaker") or "").strip(),
+            "dialogue_index": str(dialogue_index),
+        }
+
+    if (
+        scene.get("cat_motion_source") == "user"
+        and scene.get("cat_motion_binding") != "auto_user_match"
+        and str(scene.get("cat_motion_file") or "").strip()
+    ):
+        file_path = str(scene.get("cat_motion_file") or "").strip()
+        return {
+            "motion_id": str(scene.get("cat_motion_id") or "user"),
+            "file": file_path,
+            "desc": str(scene.get("cat_motion_desc") or Path(file_path).name).strip(),
+            "speaker": "",
+            "dialogue_index": "0",
+        }
+    return None
+
+
+def _restore_user_motion_bindings(
+    scenes: list[dict],
+    bindings: dict[Any, dict[str, str]],
+) -> None:
+    if not bindings:
+        return
+    for index, scene in enumerate(scenes):
+        binding = bindings.get(_scene_binding_key(scene, index))
+        if binding:
+            _apply_user_motion_binding(scene, binding)
+
+
+def _apply_user_motion_binding(scene: dict, binding: dict[str, str]) -> None:
+    file_path = str(binding.get("file") or "").strip()
+    if not file_path:
+        return
+
+    motion_desc = str(binding.get("desc") or Path(file_path).name).strip()
+    motion_id = str(binding.get("motion_id") or "user")
+    scene["cat_motion_id"] = motion_id
+    scene["cat_motion_file"] = file_path
+    scene["cat_motion_desc"] = motion_desc
+    scene["cat_motion_source"] = "user"
+    scene["_match_score"] = max(int(scene.get("_match_score", 0) or 0), 8)
+
+    dialogues = scene.get("dialogues", []) or []
+    visible_dialogues = [
+        (index, dialogue)
+        for index, dialogue in enumerate(dialogues)
+        if isinstance(dialogue, dict) and str(dialogue.get("line") or "").strip()
+    ]
+    if not visible_dialogues:
+        return
+
+    target_dialogue = None
+    speaker = str(binding.get("speaker") or "").strip()
+    if speaker:
+        for _, dialogue in visible_dialogues:
+            if str(dialogue.get("speaker") or "").strip() == speaker:
+                target_dialogue = dialogue
+                break
+    if target_dialogue is None:
+        try:
+            original_index = int(binding.get("dialogue_index", "0"))
+        except (TypeError, ValueError):
+            original_index = 0
+        original_index = max(0, min(original_index, len(visible_dialogues) - 1))
+        target_dialogue = visible_dialogues[original_index][1]
+
+    target_dialogue["motion_id"] = motion_id
+    target_dialogue["motion_file"] = file_path
+    target_dialogue["motion_desc"] = motion_desc
+    target_dialogue["motion_source"] = "user"
+    target_dialogue["motion_reason"] = "用户上传猫动作素材优先"
+
+
+def _neutralize_fixed_cat_appearance(description: Any) -> str:
+    """Remove fixed visual identity from scene descriptions.
+
+    Motion matching can choose different cat assets later; keeping visual terms
+    like "蓝衣灰猫" in description makes the storyboard text contradict the
+    rendered meme. Action and emotion cues are preserved.
+    """
+    text = str(description or "").strip()
+    if not text:
+        return ""
+    text = CAT_APPEARANCE_PATTERN.sub("猫", text)
+    text = re.sub(r"猫+", "猫", text)
+    return text.strip()
+
+
+def _sync_storyboard_cat_motion_fields(scenes: list[dict]) -> list[dict]:
+    """Keep primary scene motion aligned with single-cat rendered dialogue.
+
+    HyperFrames renders dialogue motions. For a one-dialogue scene, that means
+    the dialogue motion is the actual visible cat, so the scene-level motion
+    displayed in the storyboard must point to the same asset.
+    """
+    for scene in scenes:
+        dialogues = [
+            dialogue
+            for dialogue in scene.get("dialogues", []) or []
+            if isinstance(dialogue, dict) and str(dialogue.get("line") or "").strip()
+        ]
+        if len(dialogues) != 1:
+            continue
+        dialogue = dialogues[0]
+        motion_id = str(dialogue.get("motion_id") or "").strip()
+        motion_file = str(dialogue.get("motion_file") or "").strip()
+        if not motion_id and not motion_file:
+            continue
+        if motion_id:
+            scene["cat_motion_id"] = motion_id
+        if motion_file:
+            scene["cat_motion_file"] = motion_file
+        motion_desc = str(dialogue.get("motion_desc") or "").strip()
+        if motion_desc:
+            scene["cat_motion_desc"] = motion_desc
+        motion_source = str(dialogue.get("motion_source") or "").strip()
+        if motion_source:
+            scene["cat_motion_source"] = motion_source
+        elif motion_id == "user":
+            scene["cat_motion_source"] = "user"
+        else:
+            scene.pop("cat_motion_source", None)
+    return scenes
+
+
+def _attach_reusable_generated_assets(scenes: list[dict]) -> None:
+    """Attach indexed generated assets before gap detection."""
+    for scene in scenes:
+        background_description = str(scene.get("suggested_background", "")).strip()
+        if background_description and not _gap_already_filled(scene, {"gap_type": "背景缺失"}):
+            reusable_bg = find_reusable_asset(
+                "background",
+                background_description,
+                expected_size="2560x1440",
+            ) or find_reusable_asset("background", background_description)
+            if reusable_bg:
+                scene.setdefault("generated_assets", []).append({
+                    "type": "背景复用",
+                    "file": str(reusable_bg),
+                    "description": background_description,
+                    "reused": True,
+                })
+
+        prop_description = str(scene.get("suggested_prop", "")).strip()
+        if prop_description and not _gap_already_filled(scene, {"gap_type": "道具缺失"}):
+            reusable_prop = find_reusable_asset(
+                "prop",
+                prop_description,
+                expected_size="1920x1920",
+            ) or find_reusable_asset("prop", prop_description)
+            if reusable_prop:
+                scene.setdefault("generated_assets", []).append({
+                    "type": "道具复用",
+                    "file": str(reusable_prop),
+                    "description": prop_description,
+                    "position": scene.get("suggested_prop_position", "bottom_right"),
+                    "scale": scene.get("suggested_prop_scale", 180),
+                    "reused": True,
+                })
+
+
+def _apply_user_material_matches(
+    scene: dict,
+    custom_materials: Optional[list[str]],
+    custom_material_index: Optional[dict] = None,
+) -> None:
+    """Attach user-uploaded materials to the scene before local/generated assets."""
+    for match in match_user_materials(scene, custom_materials, custom_material_index):
+        kind = match.get("kind")
+        file_path = match.get("file", "")
+        if kind == "background" and not _gap_already_filled(scene, {"gap_type": "背景缺失"}):
+            scene.setdefault("generated_assets", []).append({
+                "type": "用户背景",
+                "file": file_path,
+                "description": scene.get("suggested_background", ""),
+                "source": "user",
+                "reason": match.get("reason", ""),
+            })
+        elif kind == "prop" and not _gap_already_filled(scene, {"gap_type": "道具缺失"}):
+            scene.setdefault("generated_assets", []).append({
+                "type": "用户道具",
+                "file": file_path,
+                "description": scene.get("suggested_prop", ""),
+                "position": scene.get("suggested_prop_position", "bottom_right"),
+                "scale": scene.get("suggested_prop_scale", 180),
+                "source": "user",
+                "reason": match.get("reason", ""),
+            })
+        elif kind == "sticker":
+            scene.setdefault("stickers", []).append({
+                "category": "user_uploaded",
+                "file": file_path,
+                "position": scene.get("sticker_position", "upper_context_right") or "upper_context_right",
+                "scale": 180,
+                "source": "user",
+                "reason": match.get("reason", ""),
+            })
+        elif kind == "cat_motion":
+            motion_id = str(match.get("motion_id") or "user")
+            scene["cat_motion_id"] = motion_id
+            scene["cat_motion_file"] = file_path
+            scene["cat_motion_desc"] = str(match.get("description") or Path(file_path).name)
+            scene["_match_score"] = max(int(scene.get("_match_score", 0) or 0), 8)
+            scene["cat_motion_source"] = "user"
+            scene["cat_motion_binding"] = "auto_user_match"
+            _bind_user_motion_to_visible_dialogues(scene, file_path, scene["cat_motion_desc"], motion_id)
+
+
+def _bind_user_motion_to_visible_dialogues(
+    scene: dict,
+    file_path: str,
+    motion_desc: str | None = None,
+    motion_id: str = "user",
+) -> None:
+    dialogues = scene.get("dialogues", []) or []
+    for dialogue in dialogues:
+        if not isinstance(dialogue, dict):
+            continue
+        if not str(dialogue.get("line") or "").strip():
+            continue
+        if dialogue.get("motion_source") == "user":
+            continue
+        if dialogue.get("motion_file") and dialogue.get("motion_source") != "user":
+            continue
+        dialogue["motion_id"] = motion_id
+        dialogue["motion_file"] = file_path
+        dialogue["motion_desc"] = motion_desc or Path(file_path).name
+        dialogue["motion_source"] = "user"
+        dialogue["motion_binding"] = "auto_user_match"
+        dialogue["motion_reason"] = "用户上传猫动作素材优先"
+        break
 
 
 def _merge_dialogue_fields(base_scenes: list[dict], dialogue_scenes: list[dict]) -> list[dict]:
@@ -683,9 +1064,17 @@ def _merge_role_fields(base_scenes: list[dict], role_scenes: list[dict]) -> list
         for index, role_dialogue in enumerate(role_dialogues):
             if index >= len(dialogues):
                 break
-            for key in ("motion_id", "motion_file", "motion_desc", "motion_reason"):
+            if (
+                dialogues[index].get("motion_source") == "user"
+                and dialogues[index].get("motion_binding") != "auto_user_match"
+            ):
+                continue
+            for key in ("motion_id", "motion_file", "motion_desc", "motion_reason", "motion_source"):
                 if key in role_dialogue:
                     dialogues[index][key] = role_dialogue[key]
+            if "motion_source" not in role_dialogue:
+                dialogues[index].pop("motion_source", None)
+            dialogues[index].pop("motion_binding", None)
     return base_scenes
 
 

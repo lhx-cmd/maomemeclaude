@@ -1,0 +1,1482 @@
+{
+  "asset_kind": "cat_motion_audio",
+  "folder": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions",
+  "source_folder": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions",
+  "count": 30,
+  "assets": [
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_1.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/1.mp4",
+      "source_motion_id": "1",
+      "description": "蓝衣灰猫坐在笔记本电脑前，两只前爪放在键盘附近反复敲动，表情木然，身体基本保持静止。",
+      "duration_seconds": 9.923,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "敲电脑",
+        "电脑",
+        "笔记本",
+        "桌面操作",
+        "打字",
+        "冷漠",
+        "麻木",
+        "疲惫",
+        "生无可恋",
+        "办公",
+        "职场",
+        "求职",
+        "写论文",
+        "复盘",
+        "网课",
+        "桌面场景"
+      ],
+      "actions": [
+        "敲电脑",
+        "电脑",
+        "笔记本",
+        "桌面操作",
+        "打字"
+      ],
+      "emotions": [
+        "冷漠",
+        "麻木",
+        "疲惫",
+        "生无可恋"
+      ],
+      "use_cases": [
+        "桌面操作",
+        "办公",
+        "职场",
+        "求职",
+        "写论文",
+        "复盘",
+        "网课",
+        "桌面场景"
+      ],
+      "avoid": [
+        "亲情回忆",
+        "户外通勤",
+        "温暖收束",
+        "无电子设备"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_2.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/2.mp4",
+      "source_motion_id": "2",
+      "description": "灰猫直立站在画面中央，张开两只前爪，身体上下小幅蹦跳，动作循环，表情呆萌。",
+      "duration_seconds": 13.423,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "蹦跳",
+        "张开胳膊",
+        "卖萌",
+        "假装没事",
+        "可爱",
+        "轻松",
+        "呆萌",
+        "松一口气",
+        "轻松收束",
+        "尴尬缓和",
+        "可爱反差"
+      ],
+      "actions": [
+        "蹦跳",
+        "张开胳膊",
+        "卖萌",
+        "假装没事"
+      ],
+      "emotions": [
+        "可爱",
+        "轻松",
+        "呆萌",
+        "松一口气"
+      ],
+      "use_cases": [
+        "轻松收束",
+        "尴尬缓和",
+        "可爱反差"
+      ],
+      "avoid": [
+        "严肃压力",
+        "强悲伤",
+        "温暖亲情真相"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_3.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/3.mp4",
+      "source_motion_id": "3",
+      "description": "穿香蕉套装的小猫趴在地面上，身体贴地旋转翻滚，画面动作幅度大，节奏快速。",
+      "duration_seconds": 6.423,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "翻滚",
+        "旋转",
+        "倒地",
+        "香蕉猫",
+        "荒诞",
+        "崩溃",
+        "失控",
+        "夸张",
+        "荒诞失控",
+        "强反转",
+        "荒诞转场",
+        "压力爆表"
+      ],
+      "actions": [
+        "翻滚",
+        "旋转",
+        "倒地",
+        "香蕉猫"
+      ],
+      "emotions": [
+        "荒诞",
+        "崩溃",
+        "失控",
+        "夸张"
+      ],
+      "use_cases": [
+        "荒诞失控",
+        "强反转",
+        "荒诞转场",
+        "压力爆表"
+      ],
+      "avoid": [
+        "真实铺垫",
+        "温暖亲情",
+        "普通对话"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_4.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/4.mp4",
+      "source_motion_id": "4",
+      "description": "白黑猫正面对镜头，张嘴叫嚷，头部左右晃动，面部占画面比例较大。",
+      "duration_seconds": 12.423,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "叫嚷",
+        "晃头",
+        "吐槽",
+        "反驳",
+        "破防",
+        "激动",
+        "强反应",
+        "不服",
+        "强 hook",
+        "争辩",
+        "吐槽反击",
+        "离谱规则"
+      ],
+      "actions": [
+        "叫嚷",
+        "晃头",
+        "吐槽",
+        "反驳"
+      ],
+      "emotions": [
+        "破防",
+        "激动",
+        "强反应",
+        "不服"
+      ],
+      "use_cases": [
+        "强 hook",
+        "争辩",
+        "吐槽反击",
+        "离谱规则"
+      ],
+      "avoid": [
+        "安静回忆",
+        "温柔结尾"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_5.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/5.mp4",
+      "source_motion_id": "5",
+      "description": "山羊正面对镜头，伸出舌头并晃动头部，主体不是猫，背景为绿幕。",
+      "duration_seconds": 8.323,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "吐舌",
+        "晃头",
+        "山羊",
+        "搞怪",
+        "离谱",
+        "乱入",
+        "跨物种彩蛋",
+        "极荒诞反转"
+      ],
+      "actions": [
+        "吐舌",
+        "晃头",
+        "山羊"
+      ],
+      "emotions": [
+        "搞怪",
+        "离谱",
+        "乱入"
+      ],
+      "use_cases": [
+        "跨物种彩蛋",
+        "极荒诞反转"
+      ],
+      "avoid": [
+        "普通猫素材",
+        "现实题材",
+        "温暖亲情",
+        "严肃压力",
+        "默认避用",
+        "非猫素材"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_6.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/6.mp4",
+      "source_motion_id": "6",
+      "description": "白色小猫近景出现在画面中，仰头张嘴叫唤，头部和身体有轻微抖动。",
+      "duration_seconds": 2.123,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "仰头叫",
+        "惊叫",
+        "撒娇",
+        "求救",
+        "委屈",
+        "惊讶",
+        "可怜",
+        "求助",
+        "病痛求助",
+        "请假",
+        "生病",
+        "突然通知",
+        "压力段"
+      ],
+      "actions": [
+        "仰头叫",
+        "惊叫",
+        "撒娇",
+        "求救"
+      ],
+      "emotions": [
+        "委屈",
+        "惊讶",
+        "可怜",
+        "求助"
+      ],
+      "use_cases": [
+        "病痛求助",
+        "请假",
+        "生病",
+        "突然通知",
+        "求助",
+        "压力段"
+      ],
+      "avoid": [
+        "冷静分析",
+        "电脑操作"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_7.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/7.mp4",
+      "source_motion_id": "7",
+      "description": "戴蓝色帽子的小猫直立站着，双爪左右摆动，身体跟随节奏摇晃，表情较冷淡。",
+      "duration_seconds": 11.423,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "摇摆",
+        "摆臂",
+        "装镇定",
+        "摆烂",
+        "冷漠",
+        "松弛",
+        "无语",
+        "低电量",
+        "上班",
+        "周一",
+        "免打扰",
+        "拒绝内卷",
+        "边界感"
+      ],
+      "actions": [
+        "摇摆",
+        "摆臂",
+        "装镇定",
+        "摆烂"
+      ],
+      "emotions": [
+        "冷漠",
+        "松弛",
+        "无语",
+        "低电量"
+      ],
+      "use_cases": [
+        "上班",
+        "周一",
+        "免打扰",
+        "拒绝内卷",
+        "边界感"
+      ],
+      "avoid": [
+        "强悲伤",
+        "温柔亲情真相"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_8.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/8.mp4",
+      "source_motion_id": "8",
+      "description": "小狗正面对镜头，吐出舌头，前爪左右摆动，主体不是猫，动作轻快。",
+      "duration_seconds": 7.523,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "吐舌",
+        "摆爪",
+        "小狗",
+        "欢脱",
+        "卖萌",
+        "乱入",
+        "宠物彩蛋",
+        "故意反差"
+      ],
+      "actions": [
+        "吐舌",
+        "摆爪",
+        "小狗"
+      ],
+      "emotions": [
+        "欢脱",
+        "卖萌",
+        "乱入"
+      ],
+      "use_cases": [
+        "宠物彩蛋",
+        "故意反差"
+      ],
+      "avoid": [
+        "普通猫素材",
+        "现实题材",
+        "默认避用",
+        "非猫素材"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_9.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/9.mp4",
+      "source_motion_id": "9",
+      "description": "香蕉猫正面对镜头张嘴大哭，双眼喷出两道夸张水柱，头部和身体有明显颤动。",
+      "duration_seconds": 3.323,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "嚎啕",
+        "大哭",
+        "喷泪",
+        "香蕉猫",
+        "崩溃",
+        "哭",
+        "焦虑",
+        "压力爆表",
+        "高压崩溃",
+        "失败暴击",
+        "考试焦虑",
+        "加班破防",
+        "突发坏消息",
+        "高强度压力"
+      ],
+      "actions": [
+        "嚎啕",
+        "大哭",
+        "喷泪",
+        "香蕉猫"
+      ],
+      "emotions": [
+        "崩溃",
+        "哭",
+        "焦虑",
+        "压力爆表"
+      ],
+      "use_cases": [
+        "高压崩溃",
+        "失败暴击",
+        "考试焦虑",
+        "加班破防",
+        "突发坏消息",
+        "高强度压力"
+      ],
+      "avoid": [
+        "温和铺垫",
+        "医疗等待",
+        "亲情结尾",
+        "轻松 CTA"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_10.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/10.mp4",
+      "source_motion_id": "10",
+      "description": "虎斑猫从画面侧边慢慢探头，身体只露出一部分，表情紧张，动作缓慢。",
+      "duration_seconds": 9.223,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "探头",
+        "偷看",
+        "试探",
+        "躲",
+        "暗中观察",
+        "忐忑",
+        "委屈",
+        "小心翼翼",
+        "怕被发现",
+        "隐蔽观察",
+        "回忆",
+        "童年",
+        "亲情",
+        "偷吃",
+        "面试等待",
+        "查成绩",
+        "秘密"
+      ],
+      "actions": [
+        "探头",
+        "偷看",
+        "试探",
+        "躲",
+        "暗中观察"
+      ],
+      "emotions": [
+        "忐忑",
+        "委屈",
+        "小心翼翼",
+        "怕被发现"
+      ],
+      "use_cases": [
+        "隐蔽观察",
+        "回忆",
+        "童年",
+        "亲情",
+        "偷吃",
+        "面试等待",
+        "查成绩",
+        "秘密"
+      ],
+      "avoid": [
+        "强庆祝",
+        "电脑办公"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_11.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/11.mp4",
+      "source_motion_id": "11",
+      "description": "橘猫背对镜头站立，随后缓慢转头看向镜头方向，同时伸出一只前爪。",
+      "duration_seconds": 6.623,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "回头",
+        "伸爪",
+        "迟疑",
+        "转身",
+        "意识到",
+        "安静",
+        "错愕",
+        "恍然大悟",
+        "认知转折",
+        "真相揭示",
+        "回忆",
+        "亲情",
+        "转折",
+        "多年后",
+        "看懂规则"
+      ],
+      "actions": [
+        "回头",
+        "伸爪",
+        "迟疑",
+        "转身",
+        "意识到"
+      ],
+      "emotions": [
+        "安静",
+        "错愕",
+        "迟疑",
+        "恍然大悟"
+      ],
+      "use_cases": [
+        "认知转折",
+        "真相揭示",
+        "回忆",
+        "亲情",
+        "转折",
+        "多年后",
+        "看懂规则"
+      ],
+      "avoid": [
+        "强爆发",
+        "纯庆祝"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_12.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/12.mp4",
+      "source_motion_id": "12",
+      "description": "猫坐在车内驾驶位，两只前爪靠近方向盘，头部转向一侧，表情冷淡。",
+      "duration_seconds": 5.723,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "开车",
+        "握方向盘",
+        "转头",
+        "冷漠",
+        "拽",
+        "不耐烦",
+        "交通通勤",
+        "通勤",
+        "堵车",
+        "打车",
+        "路上",
+        "交通"
+      ],
+      "actions": [
+        "开车",
+        "握方向盘",
+        "转头"
+      ],
+      "emotions": [
+        "冷漠",
+        "拽",
+        "不耐烦"
+      ],
+      "use_cases": [
+        "交通通勤",
+        "通勤",
+        "堵车",
+        "打车",
+        "路上",
+        "交通"
+      ],
+      "avoid": [
+        "办公室",
+        "校园",
+        "家庭室内",
+        "亲情回忆"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_13.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/13.mp4",
+      "source_motion_id": "13",
+      "description": "灰猫直立站着，四肢张开并随节奏摆动，身体左右摇晃，动作幅度较大。",
+      "duration_seconds": 12.923,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "跳舞",
+        "张开四肢",
+        "庆祝",
+        "欢快",
+        "胜利感",
+        "轻松",
+        "下班",
+        "暂时过关",
+        "荒诞爽点",
+        "庆祝收束"
+      ],
+      "actions": [
+        "跳舞",
+        "张开四肢",
+        "庆祝"
+      ],
+      "emotions": [
+        "欢快",
+        "胜利感",
+        "轻松"
+      ],
+      "use_cases": [
+        "下班",
+        "暂时过关",
+        "荒诞爽点",
+        "庆祝收束"
+      ],
+      "avoid": [
+        "亲情温暖真相",
+        "严肃压力",
+        "现实问题未解决"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_14.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/14.mp4",
+      "source_motion_id": "14",
+      "description": "眯眼小猫半身站立，一只前爪上下摆动，随后身体转向侧面，表情不耐烦。",
+      "duration_seconds": 7.623,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "摆手",
+        "转身",
+        "假装没听见",
+        "拒绝",
+        "嫌弃",
+        "无语",
+        "摆烂",
+        "冷眼",
+        "边界拒绝",
+        "上班内卷",
+        "会议",
+        "工作群",
+        "免打扰",
+        "边界感"
+      ],
+      "actions": [
+        "摆手",
+        "转身",
+        "假装没听见",
+        "拒绝"
+      ],
+      "emotions": [
+        "嫌弃",
+        "无语",
+        "摆烂",
+        "冷眼"
+      ],
+      "use_cases": [
+        "边界拒绝",
+        "上班内卷",
+        "会议",
+        "工作群",
+        "免打扰",
+        "边界感"
+      ],
+      "avoid": [
+        "强悲伤",
+        "求助"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_15.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/15.mp4",
+      "source_motion_id": "15",
+      "description": "黑猫正面对镜头，圆眼睁得很大，头部轻微晃动，绿幕背景较干净。",
+      "duration_seconds": 10.423,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "瞪眼",
+        "晃头",
+        "强 hook",
+        "震惊",
+        "瞳孔地震",
+        "离谱",
+        "突然",
+        "开头 hook",
+        "弹窗",
+        "突然通知",
+        "离谱要求"
+      ],
+      "actions": [
+        "瞪眼",
+        "晃头",
+        "强 hook"
+      ],
+      "emotions": [
+        "震惊",
+        "瞳孔地震",
+        "离谱",
+        "突然"
+      ],
+      "use_cases": [
+        "开头 hook",
+        "弹窗",
+        "突然通知",
+        "离谱要求"
+      ],
+      "avoid": [
+        "平静铺垫",
+        "温柔收束"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_16.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/16.mp4",
+      "source_motion_id": "16",
+      "description": "画面中有两只猫，橘猫从一侧探头张嘴碎碎念，旁边灰白猫低头不动，表情疲惫。",
+      "duration_seconds": 23.823,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "双猫",
+        "对话",
+        "探头",
+        "碎碎念",
+        "旁观",
+        "吐槽",
+        "生无可恋",
+        "共鸣",
+        "无语",
+        "对话反差",
+        "同学",
+        "同事",
+        "HR",
+        "老板",
+        "家人",
+        "关系反差"
+      ],
+      "actions": [
+        "双猫",
+        "对话",
+        "探头",
+        "碎碎念",
+        "旁观"
+      ],
+      "emotions": [
+        "吐槽",
+        "生无可恋",
+        "共鸣",
+        "无语"
+      ],
+      "use_cases": [
+        "对话反差",
+        "对话",
+        "同学",
+        "同事",
+        "HR",
+        "老板",
+        "家人",
+        "关系反差"
+      ],
+      "avoid": [
+        "单猫独白",
+        "安静收束"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_17.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/17.mp4",
+      "source_motion_id": "17",
+      "description": "白灰猫在绿幕前仰头张大嘴持续叫喊，嘴巴夸张张开，身体基本静止，画面清晰。",
+      "duration_seconds": 14.675,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 2,
+      "tags": [
+        "张嘴大叫",
+        "仰头叫",
+        "bobo嘴",
+        "持续喊叫",
+        "强反应",
+        "震惊",
+        "崩溃",
+        "嚎叫",
+        "激动",
+        "破防",
+        "强 hook",
+        "突发坏消息",
+        "被点名",
+        "压力爆发",
+        "夸张反应"
+      ],
+      "actions": [
+        "张嘴大叫",
+        "仰头叫",
+        "bobo嘴",
+        "持续喊叫",
+        "强反应"
+      ],
+      "emotions": [
+        "震惊",
+        "崩溃",
+        "嚎叫",
+        "激动",
+        "破防"
+      ],
+      "use_cases": [
+        "强 hook",
+        "突发坏消息",
+        "被点名",
+        "压力爆发",
+        "夸张反应"
+      ],
+      "avoid": [
+        "安静铺垫",
+        "温柔结尾",
+        "低调旁白"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_18.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/18.mp4",
+      "source_motion_id": "18",
+      "description": "白灰胖猫正面对镜头站在绿幕前，身体基本静止，眼神疑惑呆滞，像在发出 huh 的困惑反应。",
+      "duration_seconds": 9.52,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 2,
+      "tags": [
+        "站立",
+        "愣住",
+        "huh反应",
+        "疑惑凝视",
+        "轻微晃动",
+        "疑惑",
+        "震惊",
+        "呆滞",
+        "不理解",
+        "错愕",
+        "反问",
+        "听不懂规则",
+        "离谱通知",
+        "剧情转折",
+        "冷幽默"
+      ],
+      "actions": [
+        "站立",
+        "愣住",
+        "huh反应",
+        "疑惑凝视",
+        "轻微晃动"
+      ],
+      "emotions": [
+        "疑惑",
+        "震惊",
+        "呆滞",
+        "不理解",
+        "错愕"
+      ],
+      "use_cases": [
+        "反问",
+        "听不懂规则",
+        "离谱通知",
+        "剧情转折",
+        "冷幽默"
+      ],
+      "avoid": [
+        "强动作",
+        "崩溃大哭",
+        "温暖收束"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_19.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/19.mp4",
+      "source_motion_id": "19",
+      "description": "虎斑猫近景面对镜头，眼睛睁大，嘴巴张开，头部左右快速转动。",
+      "duration_seconds": 12.323,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "瞪眼",
+        "张嘴",
+        "左右转头",
+        "震惊",
+        "错愕",
+        "离谱",
+        "强反应",
+        "岗位要求",
+        "考试通知",
+        "房租涨价",
+        "审批反转",
+        "规则变化"
+      ],
+      "actions": [
+        "瞪眼",
+        "张嘴",
+        "左右转头"
+      ],
+      "emotions": [
+        "震惊",
+        "错愕",
+        "离谱",
+        "强反应"
+      ],
+      "use_cases": [
+        "岗位要求",
+        "考试通知",
+        "房租涨价",
+        "审批反转",
+        "规则变化"
+      ],
+      "avoid": [
+        "安静温暖结尾"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_20.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/20.mp4",
+      "source_motion_id": "20",
+      "description": "虎斑小猫在绿幕中央小幅漂浮和旋转，身体轻轻飘动，表情安详放空，节奏较慢。",
+      "duration_seconds": 10.983,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 2,
+      "tags": [
+        "漂浮",
+        "轻轻摇晃",
+        "放空",
+        "安详",
+        "慢动作",
+        "释然",
+        "疲惫后松弛",
+        "摆烂",
+        "灵魂出窍",
+        "下班放空",
+        "治愈收束",
+        "精神离线"
+      ],
+      "actions": [
+        "漂浮",
+        "轻轻摇晃",
+        "放空",
+        "安详",
+        "慢动作"
+      ],
+      "emotions": [
+        "安详",
+        "释然",
+        "放空",
+        "疲惫后松弛"
+      ],
+      "use_cases": [
+        "摆烂",
+        "灵魂出窍",
+        "下班放空",
+        "治愈收束",
+        "精神离线"
+      ],
+      "avoid": [
+        "高压冲突",
+        "快速打斗",
+        "严肃办公操作"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_21.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/21.mp4",
+      "source_motion_id": "21",
+      "description": "灰白猫直立在绿幕前，两只前爪抱住头部，随后张嘴叫喊，表现崩溃抱头。",
+      "duration_seconds": 5.967,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 2,
+      "tags": [
+        "抱头",
+        "捂脸",
+        "张嘴叫",
+        "崩溃反应",
+        "崩溃",
+        "懊恼",
+        "焦虑",
+        "破防",
+        "受不了",
+        "压力爆表",
+        "考试崩溃",
+        "工作崩溃",
+        "被安排任务",
+        "后悔瞬间"
+      ],
+      "actions": [
+        "抱头",
+        "捂脸",
+        "张嘴叫",
+        "崩溃反应"
+      ],
+      "emotions": [
+        "崩溃",
+        "懊恼",
+        "焦虑",
+        "破防",
+        "受不了"
+      ],
+      "use_cases": [
+        "压力爆表",
+        "考试崩溃",
+        "工作崩溃",
+        "被安排任务",
+        "后悔瞬间"
+      ],
+      "avoid": [
+        "轻松治愈",
+        "安静旁观"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_22.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/22.mp4",
+      "source_motion_id": "22",
+      "description": "画面中有两只猫在绿幕前互相扑打扭打，一只趴地一只站立拍打，动作有明显冲突互动。",
+      "duration_seconds": 6.85,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 2,
+      "tags": [
+        "打架",
+        "互相拍打",
+        "扭打",
+        "冲突互动",
+        "双猫",
+        "两只猫",
+        "冲突",
+        "暴躁",
+        "混乱",
+        "互怼",
+        "争吵",
+        "意见不合",
+        "同事互怼",
+        "朋友拌嘴",
+        "冲突升级"
+      ],
+      "actions": [
+        "打架",
+        "互相拍打",
+        "扭打",
+        "冲突互动",
+        "双猫",
+        "两只猫"
+      ],
+      "emotions": [
+        "冲突",
+        "暴躁",
+        "混乱",
+        "互怼"
+      ],
+      "use_cases": [
+        "争吵",
+        "意见不合",
+        "同事互怼",
+        "朋友拌嘴",
+        "冲突升级"
+      ],
+      "avoid": [
+        "单角色台词",
+        "温柔结尾",
+        "安静独处"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_23.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/23.mp4",
+      "source_motion_id": "23",
+      "description": "小白猫抱着一杯饮料站在画面中，身体较小，左右轻轻摇晃，表情呆愣。",
+      "duration_seconds": 2.923,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "抱奶茶",
+        "发呆",
+        "休息",
+        "左右摇晃",
+        "安静",
+        "呆愣",
+        "温暖",
+        "松一口气",
+        "疲惫",
+        "温暖收束",
+        "亲情",
+        "下班",
+        "疲惫回落",
+        "回忆"
+      ],
+      "actions": [
+        "抱奶茶",
+        "发呆",
+        "休息",
+        "左右摇晃"
+      ],
+      "emotions": [
+        "安静",
+        "呆愣",
+        "温暖",
+        "松一口气",
+        "疲惫"
+      ],
+      "use_cases": [
+        "温暖收束",
+        "亲情",
+        "休息",
+        "下班",
+        "疲惫回落",
+        "回忆"
+      ],
+      "avoid": [
+        "强爆发",
+        "主冲突高潮"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_24.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/24.mp4",
+      "source_motion_id": "24",
+      "description": "灰白猫近景面对镜头，张嘴瞪眼，头部左右晃动，面部表情夸张。",
+      "duration_seconds": 8.423,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 1,
+      "tags": [
+        "张嘴",
+        "瞪眼",
+        "晃头",
+        "震惊",
+        "突然",
+        "离谱",
+        "压力",
+        "hook",
+        "需求增加",
+        "审批驳回",
+        "坏消息",
+        "压力段"
+      ],
+      "actions": [
+        "张嘴",
+        "瞪眼",
+        "晃头"
+      ],
+      "emotions": [
+        "震惊",
+        "突然",
+        "离谱",
+        "压力"
+      ],
+      "use_cases": [
+        "hook",
+        "需求增加",
+        "审批驳回",
+        "坏消息",
+        "压力段"
+      ],
+      "avoid": [
+        "平静温柔",
+        "轻松结尾"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_25.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/25.mp4",
+      "source_motion_id": "25",
+      "description": "虎斑猫正面对镜头坐在绿幕前，眼神凶狠，身体基本静止，像在憋怒气盯人。",
+      "duration_seconds": 6.757,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 2,
+      "tags": [
+        "瞪视",
+        "生气盯人",
+        "愤怒",
+        "静止压迫",
+        "不爽",
+        "压迫感",
+        "警告",
+        "被冒犯",
+        "老板压迫",
+        "同事压迫",
+        "冲突前摇",
+        "冷脸反击"
+      ],
+      "actions": [
+        "瞪视",
+        "生气盯人",
+        "愤怒",
+        "静止压迫"
+      ],
+      "emotions": [
+        "愤怒",
+        "不爽",
+        "压迫感",
+        "警告"
+      ],
+      "use_cases": [
+        "被冒犯",
+        "老板压迫",
+        "同事压迫",
+        "冲突前摇",
+        "冷脸反击"
+      ],
+      "avoid": [
+        "卖萌",
+        "温柔治愈",
+        "轻松收束"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_26.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/26.mp4",
+      "source_motion_id": "26",
+      "description": "画面中有两只猫在绿幕前对峙，站立猫伸爪拍另一只猫头，另一只坐在地上抬头回应。",
+      "duration_seconds": 6.896,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 2,
+      "tags": [
+        "拍头",
+        "打猫头",
+        "对峙",
+        "双猫互动",
+        "两只猫",
+        "教训",
+        "冲突",
+        "吐槽",
+        "无语",
+        "朋友互怼",
+        "同事提醒",
+        "上级训话",
+        "搞笑惩罚",
+        "冲突笑点"
+      ],
+      "actions": [
+        "拍头",
+        "打猫头",
+        "对峙",
+        "双猫互动",
+        "两只猫",
+        "教训"
+      ],
+      "emotions": [
+        "冲突",
+        "吐槽",
+        "教训",
+        "无语"
+      ],
+      "use_cases": [
+        "朋友互怼",
+        "同事提醒",
+        "上级训话",
+        "搞笑惩罚",
+        "冲突笑点"
+      ],
+      "avoid": [
+        "单角色台词",
+        "温柔亲情",
+        "安静独白"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_27.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/27.mp4",
+      "source_motion_id": "27",
+      "description": "黑色小猫近景在绿幕前吐舌翻白眼，头部轻微晃动，画质偏低，表情魔性。",
+      "duration_seconds": 7.987,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 2,
+      "tags": [
+        "吐舌",
+        "翻白眼",
+        "魔性表情",
+        "近景晃动",
+        "离谱",
+        "无语",
+        "魔性",
+        "精神涣散",
+        "崩坏",
+        "离谱反应",
+        "精神下线",
+        "尴尬转场",
+        "反差笑点"
+      ],
+      "actions": [
+        "吐舌",
+        "翻白眼",
+        "魔性表情",
+        "近景晃动"
+      ],
+      "emotions": [
+        "离谱",
+        "无语",
+        "魔性",
+        "精神涣散",
+        "崩坏"
+      ],
+      "use_cases": [
+        "离谱反应",
+        "精神下线",
+        "尴尬转场",
+        "反差笑点"
+      ],
+      "avoid": [
+        "严肃温情",
+        "清晰主体需求",
+        "普通办公动作"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_28.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/28.mp4",
+      "source_motion_id": "28",
+      "description": "小香蕉猫在绿幕中央原地跑步摆臂，身体较小，动作循环轻快，适合赶路或忙乱转场。",
+      "duration_seconds": 3.761,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 2,
+      "tags": [
+        "跑步",
+        "原地奔跑",
+        "摆臂",
+        "香蕉猫",
+        "着急",
+        "赶路",
+        "慌张",
+        "忙碌",
+        "可爱",
+        "赶时间",
+        "迟到",
+        "通勤",
+        "冲刺任务",
+        "转场"
+      ],
+      "actions": [
+        "跑步",
+        "原地奔跑",
+        "摆臂",
+        "香蕉猫"
+      ],
+      "emotions": [
+        "着急",
+        "赶路",
+        "慌张",
+        "忙碌",
+        "可爱"
+      ],
+      "use_cases": [
+        "赶时间",
+        "迟到",
+        "通勤",
+        "冲刺任务",
+        "转场"
+      ],
+      "avoid": [
+        "安静对话",
+        "近景台词",
+        "严肃会议"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_29.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/29.mp4",
+      "source_motion_id": "29",
+      "description": "小香蕉猫从画面左侧跑向右侧穿过绿幕，主体较小，适合快速经过、逃离现场或转场。",
+      "duration_seconds": 6.292,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 2,
+      "tags": [
+        "跑过",
+        "横向穿过",
+        "快速移动",
+        "香蕉猫",
+        "转场",
+        "慌张",
+        "赶路",
+        "忙乱",
+        "搞笑",
+        "快速转场",
+        "逃离现场",
+        "突发任务",
+        "通勤"
+      ],
+      "actions": [
+        "跑过",
+        "横向穿过",
+        "快速移动",
+        "香蕉猫",
+        "转场"
+      ],
+      "emotions": [
+        "慌张",
+        "赶路",
+        "忙乱",
+        "搞笑"
+      ],
+      "use_cases": [
+        "快速转场",
+        "赶路",
+        "逃离现场",
+        "突发任务",
+        "通勤"
+      ],
+      "avoid": [
+        "固定对话",
+        "需要正面表情",
+        "长时间主角"
+      ]
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/audio/cat-motions/cat_motion_30.m4a",
+      "source_video": "/Users/shy/Documents/Agent/maomemeclaude/assets/cat-motions/30.mp4",
+      "source_motion_id": "30",
+      "description": "黑猫坐在绿幕前，胸前像抱着小道具，身体基本静止，眼神冷静严肃。",
+      "duration_seconds": 7.221,
+      "codec_name": "aac",
+      "sample_rate": 44100,
+      "channels": 2,
+      "tags": [
+        "静坐",
+        "抱道具",
+        "凝视",
+        "冷静站桩",
+        "冷静",
+        "严肃",
+        "神秘",
+        "警惕",
+        "冷脸吐槽",
+        "神秘出场",
+        "黑猫反应",
+        "压迫感",
+        "收束"
+      ],
+      "actions": [
+        "静坐",
+        "抱道具",
+        "凝视",
+        "冷静站桩"
+      ],
+      "emotions": [
+        "冷静",
+        "严肃",
+        "神秘",
+        "警惕"
+      ],
+      "use_cases": [
+        "冷脸吐槽",
+        "神秘出场",
+        "黑猫反应",
+        "压迫感",
+        "收束"
+      ],
+      "avoid": [
+        "高动作冲突",
+        "卖萌治愈",
+        "双猫互动"
+      ]
+    }
+  ]
+}

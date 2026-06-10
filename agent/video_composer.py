@@ -179,7 +179,7 @@ def _build_scene_plan(
     input_paths.append(str(motion_file))
     filters.append(_cat_key_filter(motion_index, duration, "cat_keyed"))
 
-    if has_audio:
+    if has_audio and scene.get("use_motion_audio") and not scene.get("audio_muted"):
         filters.append(
             f"[{motion_index}:a]atrim=0:{duration},asetpts=PTS-STARTPTS[a0]"
         )
@@ -320,7 +320,7 @@ def _append_cat_instance_overlays(
     )
     if primary_cat_label not in cat_labels:
         filters.append(f"{primary_cat_label}nullsink")
-    if count == 1:
+    if count == 1 and not _has_cat_layout_override(cat_instances[0]):
         filters.append(f"{base_label}{cat_labels[0]}overlay=(W-w)/2:(H-h)/2:format=auto[v_cat]")
         return "[v_cat]"
 
@@ -328,7 +328,11 @@ def _append_cat_instance_overlays(
     current_video = base_label
     for index in range(count):
         slot = cat_instances[index].get("slot", "center")
-        x_pos, y_pos, scale, crop_expr = _cat_instance_position(slot=slot, count=count)
+        x_pos, y_pos, scale, crop_expr = _cat_instance_position(
+            slot=slot,
+            count=count,
+            cat=cat_instances[index],
+        )
         scaled_label = f"[cat_inst{index}]"
         video_label = f"[v_cat{index}]"
         filters.append(
@@ -405,7 +409,7 @@ def _split_reused_cat_labels(filters: list[str], cat_labels: list[str]) -> list[
     return prepared
 
 
-def _cat_instance_position(slot: str, count: int) -> tuple[str, str, int, str]:
+def _cat_instance_position(slot: str, count: int, cat: dict | None = None) -> tuple[str, str, int, str]:
     scale = 900 if count == 2 else 760
     crop_expr = "crop=iw*0.62:ih:iw*0.19:0,"
     positions = {
@@ -414,7 +418,34 @@ def _cat_instance_position(slot: str, count: int) -> tuple[str, str, int, str]:
         "right": ("W-w-120", "H-h-20"),
     }
     x_pos, y_pos = positions.get(slot, positions["center"])
+    scale = _resolve_cat_scale(scale, cat)
     return x_pos, y_pos, scale, crop_expr
+
+
+def _resolve_cat_scale(base_scale: int, cat: dict | None) -> int:
+    if not isinstance(cat, dict):
+        return base_scale
+    if "scale" in cat:
+        try:
+            return _clamp_int(cat.get("scale"), 360, 1100)
+        except (TypeError, ValueError):
+            return base_scale
+    if "scale_multiplier" in cat:
+        try:
+            multiplier = float(cat.get("scale_multiplier"))
+        except (TypeError, ValueError):
+            return base_scale
+        return _clamp_int(round(base_scale * multiplier), 360, 1100)
+    return base_scale
+
+
+def _has_cat_layout_override(cat: dict) -> bool:
+    return isinstance(cat, dict) and ("scale" in cat or "scale_multiplier" in cat)
+
+
+def _clamp_int(value, minimum: int, maximum: int) -> int:
+    parsed = int(value)
+    return max(minimum, min(maximum, parsed))
 
 
 def _append_hyperframe_captions(
@@ -612,8 +643,9 @@ def _collect_overlay_stickers(scene: dict) -> list[dict]:
     ]
     for asset in scene.get("generated_assets", []):
         asset_type = str(asset.get("type", ""))
+        asset_kind = str(asset.get("kind", ""))
         asset_file = asset.get("file", "")
-        if "道具" in asset_type and asset_file and Path(asset_file).exists():
+        if ("道具" in asset_type or asset_kind == "prop") and asset_file and Path(asset_file).exists():
             overlays.append({
                 "category": "generated-prop",
                 "file": asset_file,
@@ -799,6 +831,7 @@ def _concat_scenes(scene_files: list[Path], output_path: Path):
         "-safe", "0",
         "-i", concat_list.name,
         "-c", "copy",
+        "-movflags", "+faststart",
         str(output_path),
     ]
     try:
@@ -829,6 +862,7 @@ def _concat_scenes_reencode(scene_files: list[Path], output_path: Path):
         "-b:v", "3M",
         "-c:a", "aac",
         "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
         str(output_path),
     ])
     subprocess.run(cmd, capture_output=True, check=True, timeout=120)

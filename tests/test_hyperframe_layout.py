@@ -29,6 +29,23 @@ class HyperframeLayoutTest(unittest.TestCase):
         self.assertEqual(layout["cat_instances"][0]["slot"], "left")
         self.assertEqual(layout["cat_instances"][1]["slot"], "right")
 
+    def test_cat_instances_keep_dialogue_index_for_local_tuning(self):
+        layout = build_hyperframe_layout(
+            {
+                "scene_id": 4,
+                "description": "会议室里领导猫布置任务，我在右侧神游",
+                "dialogues": [
+                    {"speaker": "领导", "line": "这周必须冲KPI", "motion_file": "/tmp/leader.mp4"},
+                    {"speaker": "我", "line": "左耳进右耳出", "motion_file": "/tmp/me.mp4"},
+                ],
+            }
+        )
+
+        self.assertEqual(layout["cat_instances"][0]["slot"], "left")
+        self.assertEqual(layout["cat_instances"][0]["dialogue_index"], 0)
+        self.assertEqual(layout["cat_instances"][1]["slot"], "right")
+        self.assertEqual(layout["cat_instances"][1]["dialogue_index"], 1)
+
     def test_falls_back_to_single_cat_from_subtitle(self):
         layout = build_hyperframe_layout(
             {

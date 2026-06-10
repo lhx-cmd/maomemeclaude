@@ -31,6 +31,7 @@ def build_hyperframe_layout(
     )
     dialogues = _normalize_dialogues(scene)
     cat_instances = _build_cat_instances(dialogues)
+    cat_instances = _apply_cat_layout_overrides(cat_instances, scene.get("cat_layout_overrides"))
 
     return {
         "topic_caption": topic_caption,
@@ -46,8 +47,8 @@ def _normalize_dialogues(scene: dict[str, Any]) -> list[dict[str, str]]:
     if not isinstance(raw_dialogues, list):
         raw_dialogues = []
 
-    dialogues: list[dict[str, str]] = []
-    for item in raw_dialogues:
+    dialogues: list[dict[str, Any]] = []
+    for source_index, item in enumerate(raw_dialogues):
         motion_id = ""
         motion_file = ""
         motion_desc = ""
@@ -62,7 +63,7 @@ def _normalize_dialogues(scene: dict[str, Any]) -> list[dict[str, str]]:
         else:
             continue
         if line:
-            dialogue = {"speaker": speaker or "猫", "line": line}
+            dialogue = {"speaker": speaker or "猫", "line": line, "dialogue_index": source_index}
             if motion_id:
                 dialogue["motion_id"] = motion_id
             if motion_file:
@@ -84,7 +85,7 @@ def _normalize_dialogues(scene: dict[str, Any]) -> list[dict[str, str]]:
     return _collapse_duplicate_motion_dialogues(dialogues[:MAX_CAT_INSTANCES])
 
 
-def _build_cat_instances(dialogues: list[dict[str, str]]) -> list[dict[str, str]]:
+def _build_cat_instances(dialogues: list[dict[str, Any]]) -> list[dict[str, Any]]:
     slots_by_count = {
         1: ["center"],
         2: ["left", "right"],
@@ -100,8 +101,38 @@ def _build_cat_instances(dialogues: list[dict[str, str]]) -> list[dict[str, str]
             "motion_id": dialogue.get("motion_id", ""),
             "motion_file": dialogue.get("motion_file", ""),
             "motion_desc": dialogue.get("motion_desc", ""),
+            "dialogue_index": dialogue.get("dialogue_index", index),
         })
     return instances
+
+
+def _apply_cat_layout_overrides(
+    cat_instances: list[dict[str, str]],
+    overrides: Any,
+) -> list[dict[str, str]]:
+    if not isinstance(overrides, dict):
+        return cat_instances
+
+    updated = []
+    for cat in cat_instances:
+        slot = cat.get("slot", "center")
+        slot_override = overrides.get(slot)
+        if isinstance(slot_override, dict):
+            merged = dict(cat)
+            if "scale_multiplier" in slot_override:
+                try:
+                    merged["scale_multiplier"] = float(slot_override["scale_multiplier"])
+                except (TypeError, ValueError):
+                    pass
+            if "scale" in slot_override:
+                try:
+                    merged["scale"] = int(slot_override["scale"])
+                except (TypeError, ValueError):
+                    pass
+            updated.append(merged)
+        else:
+            updated.append(cat)
+    return updated
 
 
 def _normalize_scene_caption(value: Any) -> str:
@@ -130,6 +161,9 @@ def _dialogue_motion_key(dialogue: dict[str, str]) -> str:
     motion_file = _clean_text(dialogue.get("motion_file"))
     if motion_file:
         return f"file:{motion_file}"
+    motion_id = _clean_text(dialogue.get("motion_id"))
+    if motion_id:
+        return f"id:{motion_id}"
     return ""
 
 

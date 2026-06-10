@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from agent import video_composer
 
@@ -68,6 +69,40 @@ class VideoComposerPlanTest(unittest.TestCase):
 
             self.assertIn("scale=220:-1", plan.filter_complex)
             self.assertIn("overlay=W-w-80:160", plan.filter_complex)
+
+    def test_render_plan_uses_user_prop_asset(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            motion = tmp_path / "motion.mp4"
+            prop = tmp_path / "coffee_cup.png"
+            motion.touch()
+            prop.touch()
+
+            scene = {
+                "scene_id": 1,
+                "generated_assets": [
+                    {
+                        "type": "用户道具",
+                        "kind": "prop",
+                        "source": "user",
+                        "file": str(prop),
+                        "position": "desk_left",
+                        "scale": 180,
+                    }
+                ],
+            }
+
+            plan = video_composer._build_scene_plan(
+                scene=scene,
+                motion_file=str(motion),
+                duration=2.0,
+                font="/tmp/font.ttf",
+                has_audio=False,
+                scene_index=0,
+            )
+
+            self.assertIn(str(prop), plan.input_paths)
+            self.assertIn("overlay=260:H-h-320", plan.filter_complex)
 
     def test_render_plan_skips_decorative_expression_stickers(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -256,6 +291,106 @@ class VideoComposerPlanTest(unittest.TestCase):
             self.assertIn("crop=iw*0.62:ih:iw*0.19:0,scale=900:-1", plan.filter_complex)
             self.assertIn("[cat_keyed_role0]", plan.filter_complex)
 
+    def test_render_plan_honors_scene_audio_muted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            motion = tmp_path / "motion.mp4"
+            motion.touch()
+
+            scene = {
+                "scene_id": 2,
+                "audio_muted": True,
+                "dialogues": [{"speaker": "我", "line": "这一镜不要原声", "motion_file": str(motion)}],
+            }
+
+            plan = video_composer._build_scene_plan(
+                scene=scene,
+                motion_file=str(motion),
+                duration=2.0,
+                font="/tmp/font.ttf",
+                has_audio=True,
+                scene_index=1,
+            )
+
+            self.assertIn("anullsrc=r=44100:cl=stereo:d=2.0[a0]", plan.filter_complex)
+            self.assertNotIn("[0:a]atrim", plan.filter_complex)
+
+    def test_render_plan_defaults_to_silence_even_when_motion_has_audio(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            motion = tmp_path / "motion.mp4"
+            motion.touch()
+
+            scene = {
+                "scene_id": 3,
+                "dialogues": [{"speaker": "我", "line": "猫动作只当画面用", "motion_file": str(motion)}],
+            }
+
+            plan = video_composer._build_scene_plan(
+                scene=scene,
+                motion_file=str(motion),
+                duration=2.0,
+                font="/tmp/font.ttf",
+                has_audio=True,
+                scene_index=2,
+            )
+
+            self.assertIn("anullsrc=r=44100:cl=stereo:d=2.0[a0]", plan.filter_complex)
+            self.assertNotIn("[0:a]atrim", plan.filter_complex)
+
+    def test_render_plan_uses_motion_audio_only_when_explicitly_requested(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            motion = tmp_path / "motion.mp4"
+            motion.touch()
+
+            scene = {
+                "scene_id": 4,
+                "use_motion_audio": True,
+                "dialogues": [{"speaker": "我", "line": "这一镜显式保留原声", "motion_file": str(motion)}],
+            }
+
+            plan = video_composer._build_scene_plan(
+                scene=scene,
+                motion_file=str(motion),
+                duration=2.0,
+                font="/tmp/font.ttf",
+                has_audio=True,
+                scene_index=3,
+            )
+
+            self.assertIn("[0:a]atrim=0:2.0,asetpts=PTS-STARTPTS[a0]", plan.filter_complex)
+            self.assertNotIn("anullsrc=r=44100:cl=stereo:d=2.0[a0]", plan.filter_complex)
+
+    def test_render_plan_honors_left_cat_scale_override(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            left_motion = tmp_path / "left.mp4"
+            right_motion = tmp_path / "right.mp4"
+            left_motion.touch()
+            right_motion.touch()
+
+            scene = {
+                "scene_id": 5,
+                "cat_layout_overrides": {"left": {"scale_multiplier": 0.78}},
+                "dialogues": [
+                    {"speaker": "我", "line": "太大了", "motion_file": str(left_motion)},
+                    {"speaker": "同事", "line": "缩小点", "motion_file": str(right_motion)},
+                ],
+            }
+
+            plan = video_composer._build_scene_plan(
+                scene=scene,
+                motion_file=str(left_motion),
+                duration=2.0,
+                font="/tmp/font.ttf",
+                has_audio=False,
+                scene_index=4,
+            )
+
+            self.assertIn("crop=iw*0.62:ih:iw*0.19:0,scale=702:-1", plan.filter_complex)
+            self.assertIn("crop=iw*0.62:ih:iw*0.19:0,scale=900:-1", plan.filter_complex)
+
     def test_render_plan_uses_distinct_motion_files_for_dialogue_cats(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -343,6 +478,20 @@ class VideoComposerPlanTest(unittest.TestCase):
         self.assertIn("[1] /tmp/cat.mp4", message)
         self.assertIn("filter_complex_tail", message)
         self.assertIn("unconnected", message)
+
+    @patch("agent.video_composer.subprocess.run")
+    def test_concat_scenes_writes_faststart_mp4(self, run):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            scene_file = tmp_path / "scene_001.mp4"
+            output_file = tmp_path / "final.mp4"
+            scene_file.touch()
+
+            video_composer._concat_scenes([scene_file], output_file)
+
+        cmd = run.call_args.args[0]
+        self.assertIn("-movflags", cmd)
+        self.assertIn("+faststart", cmd)
 
 
 if __name__ == "__main__":

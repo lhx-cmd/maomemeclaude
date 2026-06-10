@@ -1,9 +1,9 @@
 {
   "asset_kind": "background",
-  "description": "公司茶水间",
-  "prompt": "A simple 16:9 landscape cartoon background scene of 公司茶水间, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
+  "description": "商业街街口",
+  "prompt": "A simple 16:9 landscape cartoon background scene of 商业街街口, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
   "size": "2560x1440",
   "style": "16:9 landscape, flat illustration, cartoon background, soft colors, minimal, no characters",
-  "revised_prompt": "A simple 16:9 landscape cartoon background scene of 公司茶水间, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
-  "generated_at": "2026-06-07T16:18:22"
+  "revised_prompt": "A simple 16:9 landscape cartoon background scene of 商业街街口, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
+  "generated_at": "2026-06-09T16:09:47"
 }

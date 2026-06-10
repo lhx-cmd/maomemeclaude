@@ -31,15 +31,6 @@
       "generated_at": "2026-06-07T11:16:26"
     },
     {
-      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_5_prop.png",
-      "description": "",
-      "prompt": "A cute cartoon prop of 工牌, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
-      "revised_prompt": "A cute cartoon prop of 工牌, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
-      "size": "1920x1920",
-      "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
-      "generated_at": "2026-06-07T11:17:15"
-    },
-    {
       "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_8_prop.png",
       "description": "",
       "prompt": "A cute cartoon prop of 手机到账通知, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
@@ -47,6 +38,24 @@
       "size": "1920x1920",
       "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
       "generated_at": "2026-06-07T11:05:10"
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_4_prop.png",
+      "description": "全糖芋泥奶茶",
+      "prompt": "A cute cartoon prop of 全糖芋泥奶茶, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "revised_prompt": "A cute cartoon prop of 全糖芋泥奶茶, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "size": "1920x1920",
+      "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
+      "generated_at": "2026-06-09T19:33:22"
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_5_prop.png",
+      "description": "冰奶茶",
+      "prompt": "A cute cartoon prop of 冰奶茶, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "revised_prompt": "A cute cartoon prop of 冰奶茶, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "size": "1920x1920",
+      "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
+      "generated_at": "2026-06-10T11:10:15"
     },
     {
       "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_7_prop.png",
@@ -59,30 +68,21 @@
     },
     {
       "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_6_prop.png",
-      "description": "办公键盘",
-      "prompt": "A cute cartoon prop of 办公键盘, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
-      "revised_prompt": "A cute cartoon prop of 办公键盘, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "description": "热咖啡杯",
+      "prompt": "A cute cartoon prop of 热咖啡杯, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "revised_prompt": "A cute cartoon prop of 热咖啡杯, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
       "size": "1920x1920",
       "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
-      "generated_at": "2026-06-08T12:06:00"
+      "generated_at": "2026-06-08T20:49:01"
     },
     {
       "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_3_prop.png",
-      "description": "手机闹钟",
-      "prompt": "A cute cartoon prop of 手机闹钟, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
-      "revised_prompt": "A cute cartoon prop of 手机闹钟, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "description": "限定奶茶",
+      "prompt": "A cute cartoon prop of 限定奶茶, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+      "revised_prompt": "A cute cartoon prop of 限定奶茶, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
       "size": "1920x1920",
       "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
-      "generated_at": "2026-06-08T12:06:04"
-    },
-    {
-      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/props/scene_4_prop.png",
-      "description": "键盘",
-      "prompt": "A cute cartoon prop of 键盘, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
-      "revised_prompt": "A cute cartoon prop of 键盘, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
-      "size": "1920x1920",
-      "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
-      "generated_at": "2026-06-07T22:01:23"
+      "generated_at": "2026-06-09T20:56:54"
     }
   ]
 }

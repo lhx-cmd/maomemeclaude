@@ -1,7 +1,9 @@
 {
-  "prompt": "A cute cartoon prop of 工牌, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+  "asset_kind": "prop",
+  "description": "冰奶茶",
+  "prompt": "A cute cartoon prop of 冰奶茶, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
   "size": "1920x1920",
   "style": "cute cartoon prop, isolated object, sticker style, vibrant, clean edges",
-  "revised_prompt": "A cute cartoon prop of 工牌, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
-  "generated_at": "2026-06-07T11:17:15"
+  "revised_prompt": "A cute cartoon prop of 冰奶茶, isolated object, clean edges, suitable for cat meme video, simple design, vibrant colors, sticker style",
+  "generated_at": "2026-06-10T11:10:15"
 }

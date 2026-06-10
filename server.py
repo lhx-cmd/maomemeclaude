@@ -15,11 +15,11 @@ from concurrent.futures import ThreadPoolExecutor
 # 确保项目根目录在 Python 路径中
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from flask import Flask, request, jsonify, send_file, send_from_directory, Response, stream_with_context
+from flask import Flask, request, jsonify, send_file, Response, stream_with_context
 from werkzeug.utils import secure_filename
 
 from agent.config import config
-from agent.video_analyzer import analyze_video, load_structures, batch_analyze
+from agent.video_analyzer import analyze_video, load_structures
 from agent.script_generator import (
     generate_scripts, format_scripts_for_display,
     generate_scripts_streaming, generate_brief_scripts_streaming,
@@ -27,6 +27,8 @@ from agent.script_generator import (
 )
 from agent.storyboard_generator import generate_storyboard, format_storyboard_for_display
 from agent.editor import parse_edit_intent, apply_edits, format_edit_summary
+from agent.edit_workflow_graph import EditWorkflowStepError, run_edit_storyboard
+from agent.user_material_library import build_user_material_index
 from agent.video_composer import compose_video
 from agent.workflow_graph import (
     WorkflowStepError,
@@ -48,6 +50,27 @@ ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".webm", ".mkv"}
 ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
 
+def _make_video_output_path(session_id: str) -> Path:
+    """Return a unique final-video path so browsers never reuse stale media URLs."""
+    output_dir = config.generated_dir / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    safe_session = secure_filename(session_id or "session") or "session"
+    nonce = f"{int(time.time() * 1000)}_{uuid.uuid4().hex[:8]}"
+    return output_dir / f"final_video_{safe_session}_{nonce}.mp4"
+
+
+def _safe_upload_filename(original_name: str, fallback_stem: str) -> str:
+    """Sanitize uploads while preserving the original extension."""
+    original_path = Path(original_name or "")
+    ext = original_path.suffix.lower()
+    stem = original_path.stem or fallback_stem
+    safe_stem = secure_filename(stem) or secure_filename(fallback_stem) or "upload"
+    safe_name = secure_filename(original_name or "")
+    if safe_name and Path(safe_name).suffix.lower() == ext:
+        return safe_name
+    return f"{safe_stem}{ext}"
+
+
 def get_or_create_session(session_id: str | None = None) -> tuple[str, dict]:
     """获取或创建会话。"""
     if session_id and session_id in sessions:
@@ -58,6 +81,7 @@ def get_or_create_session(session_id: str | None = None) -> tuple[str, dict]:
         "theme": "",
         "video_path": None,
         "materials": [],
+        "material_index": {"version": 1, "materials": []},
         "scripts": None,
         "selected_script": None,
         "storyboard": None,
@@ -114,12 +138,24 @@ def api_analyze():
 
     state["theme"] = theme
 
+    # 先保存用户素材；上传视频分支会提前返回，素材不能因此丢失。
+    material_files = request.files.getlist("materials")
+    for mf in material_files:
+        if mf and mf.filename:
+            ext = Path(mf.filename).suffix.lower()
+            if ext in ALLOWED_IMAGE_EXTENSIONS or ext in ALLOWED_VIDEO_EXTENSIONS:
+                filename = _safe_upload_filename(mf.filename, "material")
+                mat_path = UPLOAD_DIR / f"{session_id}_mat_{filename}"
+                mf.save(str(mat_path))
+                state["materials"].append(str(mat_path))
+    state["material_index"] = build_user_material_index(state.get("materials") or [])
+
     # 处理上传的视频
     video_file = request.files.get("video")
     if video_file and video_file.filename:
         ext = Path(video_file.filename).suffix.lower()
         if ext in ALLOWED_VIDEO_EXTENSIONS:
-            filename = secure_filename(video_file.filename)
+            filename = _safe_upload_filename(video_file.filename, "video")
             video_path = UPLOAD_DIR / f"{session_id}_{filename}"
             video_file.save(str(video_path))
             state["video_path"] = str(video_path)
@@ -127,6 +163,7 @@ def api_analyze():
             # 分析上传的视频
             structure = analyze_video(video_path, save_structure=False)
             state["custom_structure"] = structure
+            state["reference_structure"] = None
             state["state"] = "ANALYZE"
             return jsonify({
                 "state": "ANALYZE",
@@ -140,23 +177,12 @@ def api_analyze():
                 },
             })
 
-    # 处理上传的素材
-    material_files = request.files.getlist("materials")
-    for mf in material_files:
-        if mf and mf.filename:
-            ext = Path(mf.filename).suffix.lower()
-            if ext in ALLOWED_IMAGE_EXTENSIONS or ext in ALLOWED_VIDEO_EXTENSIONS:
-                filename = secure_filename(mf.filename)
-                mat_path = UPLOAD_DIR / f"{session_id}_mat_{filename}"
-                mf.save(str(mat_path))
-                state["materials"].append(str(mat_path))
-
     # 使用内置爆款结构库
     structures = load_structures()
     if not structures:
-        # 首次使用，先分析
-        batch_analyze()
-        structures = load_structures()
+        return jsonify({
+            "error": "内置爆款结构库为空，请先准备 assets/baokuan/structure 下的结构 JSON，或上传参考视频进行实时分析",
+        }), 503
 
     from agent.script_generator import _auto_match_structure
     best = _auto_match_structure(theme, structures)
@@ -189,13 +215,14 @@ def api_generate_scripts():
         return jsonify({"error": "请先提供主题"}), 400
 
     preference = data.get("preference", "")
-    reference = state.get("reference_structure") or state.get("custom_structure")
+    reference = _active_reference_structure(state)
 
     try:
         result = generate_scripts(
             theme=state["theme"],
             reference_structure=reference,
             custom_materials=state.get("materials"),
+            custom_material_index=state.get("material_index"),
             user_preferences=preference,
         )
     except Exception as e:
@@ -229,10 +256,21 @@ def api_generate_scripts_stream():
 
     if not state["theme"]:
         def error_stream():
-            yield f"data: {json.dumps({'error': '请先提供主题'})}\n\n"
-        return Response(error_stream(), mimetype="text/event-stream")
+            payload = {
+                "error": "会话已失效或主题为空，请重新输入主题并生成剧本",
+                "code": "SESSION_EXPIRED",
+            }
+            yield f"event: error\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+        return Response(
+            error_stream(),
+            mimetype="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
+        )
 
-    reference = state.get("reference_structure") or state.get("custom_structure")
+    reference = _active_reference_structure(state)
 
     # 线程间通信
     progress_events: list[dict] = []
@@ -268,6 +306,7 @@ def api_generate_scripts_stream():
                 "theme": state["theme"],
                 "reference_structure": reference,
                 "materials": state.get("materials"),
+                "material_index": state.get("material_index"),
                 "preference": preference,
                 "on_progress": on_progress,
             })
@@ -282,7 +321,8 @@ def api_generate_scripts_stream():
 
     def event_stream():
         last_sent = 0
-        while not done_event.is_set() or last_sent < len(progress_events):
+        terminal_sent = False
+        while not terminal_sent:
             with lock:
                 new_events = progress_events[last_sent:]
                 last_sent = len(progress_events)
@@ -308,6 +348,7 @@ def api_generate_scripts_stream():
                         "reference_narrative": r.get("reference_narrative", ""),
                     }, ensure_ascii=False)
                     yield f"event: done\ndata: {done_data}\n\n"
+                terminal_sent = True
                 break
 
             # 等待新事件（100ms 轮询）
@@ -347,6 +388,11 @@ def _summarize_scripts(result: dict) -> list[dict]:
     return scripts_summary
 
 
+def _active_reference_structure(state: dict) -> dict | None:
+    """Return the structure that should drive generation for this session."""
+    return state.get("custom_structure") or state.get("reference_structure")
+
+
 def _resolve_script_selection(scripts: list[dict], data: dict) -> dict:
     """Resolve a selected script by stable version key, falling back to index."""
     script_version = data.get("script_version")
@@ -370,8 +416,9 @@ def _storyboard_cache_key(state: dict, brief_script: dict) -> str:
     """Build a stable in-memory cache key for one selected brief script."""
     payload = {
         "theme": state.get("theme", ""),
-        "reference": (state.get("reference_structure") or state.get("custom_structure") or {}).get("video_name", ""),
+        "reference": (_active_reference_structure(state) or {}).get("video_name", ""),
         "materials": state.get("materials") or [],
+        "material_index": state.get("material_index") or {},
         "brief_script": brief_script,
     }
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
@@ -435,8 +482,9 @@ def api_select_script():
         workflow_state = run_select_to_storyboard({
             "session_id": session_id,
             "theme": state["theme"],
-            "reference_structure": state.get("reference_structure") or state.get("custom_structure"),
+            "reference_structure": _active_reference_structure(state),
             "materials": state.get("materials"),
+            "material_index": state.get("material_index"),
             "selected_script": brief_script,
         })
     except WorkflowStepError as e:
@@ -472,14 +520,22 @@ def api_edit():
         return jsonify({"error": "请先生成分镜"}), 400
 
     try:
-        edit_plan = parse_edit_intent(instruction, state["storyboard"])
-        state["storyboard"] = apply_edits(state["storyboard"], edit_plan)
+        workflow_state = run_edit_storyboard({
+            "session_id": session_id,
+            "instruction": instruction,
+            "storyboard": state["storyboard"],
+        })
+        edit_plan = workflow_state["edit_plan"]
+        state["storyboard"] = workflow_state["storyboard"]
+        state["video_path"] = None
         state["edit_history"].append({
             "instruction": instruction,
             "intent": edit_plan.get("intent", ""),
             "explanation": edit_plan.get("explanation", ""),
         })
         state["state"] = "STORYBOARD"
+    except EditWorkflowStepError as e:
+        return jsonify({"error": e.message}), 500
     except Exception as e:
         return jsonify({"error": f"编辑失败: {str(e)}"}), 500
 
@@ -487,6 +543,9 @@ def api_edit():
 
     return jsonify({
         "state": "STORYBOARD",
+        "theme": storyboard.get("theme", state.get("theme", "")),
+        "script_title": storyboard.get("script_title", ""),
+        "script_version": storyboard.get("script_version", ""),
         "edit_result": {
             "intent": edit_plan.get("intent", ""),
             "explanation": edit_plan.get("explanation", ""),
@@ -494,6 +553,7 @@ def api_edit():
         },
         "total_duration": storyboard.get("total_duration", 0),
         "scene_count": storyboard.get("scene_count", 0),
+        "video_url": None,
         "scenes": _serialize_scenes(storyboard.get("scenes", [])),
         "gaps": storyboard.get("gaps", {}),
         "edit_history": state["edit_history"],
@@ -554,9 +614,7 @@ def api_generate_video():
     if not state["storyboard"]:
         return jsonify({"error": "请先生成分镜"}), 400
 
-    output_dir = config.generated_dir / "output"
-    output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / f"final_video_{session_id}.mp4"
+    output_path = _make_video_output_path(session_id)
 
     try:
         workflow_state = run_compose_video({
@@ -569,11 +627,18 @@ def api_generate_video():
         state["video_path"] = workflow_state["video_path"]
         state["state"] = "DONE"
 
+        storyboard = state["storyboard"] or {}
         return jsonify({
             "state": "DONE",
             "video_url": f"/assets/generated/output/{result_path.name}",
             "video_path": workflow_state["video_path"],
             "file_size_mb": round(result_path.stat().st_size / (1024 * 1024), 2),
+            "script_title": storyboard.get("script_title", ""),
+            "script_version": storyboard.get("script_version", ""),
+            "total_duration": storyboard.get("total_duration", 0),
+            "scene_count": storyboard.get("scene_count", 0),
+            "scenes": _serialize_scenes(storyboard.get("scenes", [])),
+            "gaps": storyboard.get("gaps", {}),
         })
     except Exception as e:
         return jsonify({"error": f"视频合成失败: {str(e)}"}), 500
@@ -590,9 +655,7 @@ def api_generate_video_stream():
             yield f"data: {json.dumps({'error': '请先生成分镜'})}\n\n"
         return Response(error_stream(), mimetype="text/event-stream")
 
-    output_dir = config.generated_dir / "output"
-    output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / f"final_video_{session_id}.mp4"
+    output_path = _make_video_output_path(session_id)
 
     # 用于线程间通信
     progress_lock = threading.Lock()
@@ -616,6 +679,7 @@ def api_generate_video_stream():
             result_holder["path"] = workflow_state["video_path"]
             result_holder["size_mb"] = workflow_state["video_size_mb"]
             state["storyboard"] = workflow_state.get("storyboard", state["storyboard"])
+            result_holder["storyboard"] = state["storyboard"]
             state["video_path"] = workflow_state["video_path"]
             state["state"] = "DONE"
         except Exception as e:
@@ -668,6 +732,16 @@ def _iter_video_stream_events(
                     "video_url": video_url,
                     "file_size_mb": result_holder.get("size_mb", 0),
                 }
+                storyboard = result_holder.get("storyboard") or {}
+                if storyboard:
+                    payload.update({
+                        "script_title": storyboard.get("script_title", ""),
+                        "script_version": storyboard.get("script_version", ""),
+                        "total_duration": storyboard.get("total_duration", 0),
+                        "scene_count": storyboard.get("scene_count", 0),
+                        "scenes": _serialize_scenes(storyboard.get("scenes", [])),
+                        "gaps": storyboard.get("gaps", {}),
+                    })
                 yield f"event: done\ndata: {json.dumps(payload)}\n\n"
             break
 
@@ -691,7 +765,11 @@ def serve_assets(filepath):
     """服务 assets 目录下的文件"""
     asset_path = config.assets_root / filepath
     if asset_path.exists():
-        return send_file(asset_path)
+        response = send_file(asset_path, conditional=True)
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Accept-Ranges"] = "bytes"
+        return response
     return jsonify({"error": "file not found"}), 404
 
 
@@ -719,13 +797,19 @@ def _serialize_scenes(scenes: list[dict]) -> list[dict]:
             "transition": s.get("transition", "硬切"),
             "emotion": s.get("emotion", ""),
             "cat_motion_id": s.get("cat_motion_id"),
+            "cat_motion_file": str(s.get("cat_motion_file", "")),
             "cat_motion_desc": str(s.get("cat_motion_desc", "")),
+            "cat_motion_source": str(s.get("cat_motion_source", "")),
+            "audio_muted": bool(s.get("audio_muted", False)),
+            "cat_layout_overrides": s.get("cat_layout_overrides", {}),
+            "rendered_cats": _rendered_cat_roles_for_scene(s),
             "stickers": [
                 {
                     "category": st.get("category", ""),
                     "file": str(st.get("file", "")),
                     "position": st.get("position", ""),
                     "scale": st.get("scale", 180),
+                    "source": st.get("source", ""),
                 }
                 for st in s.get("stickers", [])
             ],
@@ -736,6 +820,39 @@ def _serialize_scenes(scenes: list[dict]) -> list[dict]:
         }
         result.append(item)
     return result
+
+
+def _rendered_cat_roles_for_scene(scene: dict) -> list[dict]:
+    """Return the cat roles the renderer will try to show for this scene."""
+    dialogues = scene.get("dialogues", []) or []
+    rendered = []
+    for dialogue in dialogues:
+        if not isinstance(dialogue, dict):
+            continue
+        line = str(dialogue.get("line") or dialogue.get("text") or dialogue.get("speech") or "").strip()
+        if not line:
+            continue
+        rendered.append({
+            "speaker": str(dialogue.get("speaker") or dialogue.get("name") or dialogue.get("role") or "猫"),
+            "line": line,
+            "motion_id": str(dialogue.get("motion_id") or scene.get("cat_motion_id") or ""),
+            "motion_file": str(dialogue.get("motion_file") or scene.get("cat_motion_file") or ""),
+            "motion_desc": str(dialogue.get("motion_desc") or scene.get("cat_motion_desc") or ""),
+            "motion_source": str(dialogue.get("motion_source") or ""),
+        })
+        if len(rendered) >= 3:
+            break
+
+    if not rendered and scene.get("cat_motion_id"):
+        rendered.append({
+            "speaker": "猫",
+            "line": str(scene.get("subtitle") or ""),
+            "motion_id": str(scene.get("cat_motion_id") or ""),
+            "motion_file": str(scene.get("cat_motion_file") or ""),
+            "motion_desc": str(scene.get("cat_motion_desc") or ""),
+            "motion_source": str(scene.get("cat_motion_source") or ""),
+        })
+    return rendered
 
 
 # ─── 启动 ───────────────────────────────────────────────

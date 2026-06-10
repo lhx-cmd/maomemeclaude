@@ -17,6 +17,7 @@ from .doubao_client import client
 from .generated_asset_library import asset_index_context
 from .video_analyzer import load_structures
 from .material_matcher import build_material_context
+from .user_material_library import describe_user_materials
 from .utils import load_sticker_catalog
 
 
@@ -71,6 +72,7 @@ DETAILED_SCRIPT_PROMPT = """你是一位专业的短视频编导，专精于猫m
 - 每镜都要给出建议背景（suggested_background），只有剧情明确需要具体物件时才给出 suggested_prop；不需要时必须填空字符串
 - 有贴纸时给出贴纸位置（sticker_position），可选值：near_cat_paw_left/near_cat_paw_right（手机、手、爪边交互）、desk_left/desk_right（试卷、书、笔、电脑等桌面物件）、upper_context_left/upper_context_right（消息气泡、倒计时、通知牌）；无贴纸时填空字符串。不要把剧情道具随意放到 top_left/top_right。
 - 用 HyperFrames 风格组织字幕层：scene_caption 是画面正中上方的当前分镜解释，只写4-8个字极短标签（如：赖床时刻/闹钟催命/开会走神），渲染时会自动加 *；不要写完整剧情句。dialogues 是猫头上的台词数组，可为1只猫独白，也可为2-3只猫对话，不要写死必须双猫。
+- description 只描述动作、情绪、场景和剧情，不要写死猫的颜色、花色、衣服或具体外观（如蓝衣灰猫、白猫、橘猫）；具体猫素材由分镜匹配阶段选择。
 - dialogues 负责猫咪头上的对话；subtitle_text 是底部短字幕/角色标签/补充吐槽，避免和 dialogues 完全重复。
 - 当剧情出现朋友、同事、领导、老师、室友、客户、家人、群消息、请求、催促、回应、争辩等关系时，优先用2-3条 dialogues 让一个分镜里出现多只不同猫形成互动；独白、强反应、崩溃、转场镜头可以保持1只猫。
 - 一个完整视频建议至少安排2个适合的多猫互动分镜，让剧情有交流感；不要为了凑数在完全独白的镜头硬塞角色。
@@ -209,15 +211,19 @@ def _build_base_context(
     custom_materials: Optional[list[str]],
     user_preferences: str,
     material_context: Optional[str] = None,
+    custom_material_index: Optional[dict] = None,
 ) -> str:
     """构建公共上下文（避免重复代码）。"""
     if material_context is None:
         material_context = build_material_context()
 
-    custom_materials_text = ""
-    if custom_materials:
-        custom_materials_text = "\n## 用户上传素材\n" + "\n".join(
-            f"- {m}" for m in custom_materials
+    custom_materials_text = describe_user_materials(custom_materials, custom_material_index)
+    has_custom_materials = bool(custom_materials)
+    local_material_header = "## 本地素材库"
+    if has_custom_materials:
+        local_material_header = (
+            "## 本地素材库\n"
+            "## 本地补充素材库（仅在用户上传素材不足或不适合时使用）"
         )
 
     structure_summary = _summarize_structure(reference_structure)
@@ -230,9 +236,11 @@ def _build_base_context(
 ## 参考的爆款结构
 {structure_summary}
 
-## 可用素材
+{custom_materials_text}
+
+{local_material_header}
 {material_context}
-{custom_materials_text}"""
+"""
 
 
 def _build_lightweight_detail_material_context() -> str:
@@ -289,6 +297,7 @@ def generate_brief_scripts_streaming(
     theme: str,
     reference_structure: Optional[dict] = None,
     custom_materials: Optional[list[str]] = None,
+    custom_material_index: Optional[dict] = None,
     user_preferences: str = "",
     on_progress: Optional[Callable[[str, dict | None], None]] = None,
 ) -> dict:
@@ -302,7 +311,13 @@ def generate_brief_scripts_streaming(
                      当 version_key == "done" 时表示全部完成
     """
     ref = _get_reference_structure(theme, reference_structure)
-    base_context = _build_base_context(theme, ref, custom_materials, user_preferences)
+    base_context = _build_base_context(
+        theme,
+        ref,
+        custom_materials,
+        user_preferences,
+        custom_material_index=custom_material_index,
+    )
 
     def _generate_one(vc: dict) -> dict:
         version = vc["version"]
@@ -388,6 +403,7 @@ def expand_script_detail(
     theme: str,
     reference_structure: Optional[dict] = None,
     custom_materials: Optional[list[str]] = None,
+    custom_material_index: Optional[dict] = None,
 ) -> dict:
     """将用户选中的简略剧本展开为**完整详细剧本**（含逐镜头描述）。
 
@@ -407,6 +423,7 @@ def expand_script_detail(
         custom_materials,
         "",
         material_context=_build_lightweight_detail_material_context(),
+        custom_material_index=custom_material_index,
     )
 
     # 找到对应的详细版style_hint
@@ -475,6 +492,7 @@ def generate_scripts(
     theme: str,
     reference_structure: Optional[dict] = None,
     custom_materials: Optional[list[str]] = None,
+    custom_material_index: Optional[dict] = None,
     user_preferences: str = "",
 ) -> dict:
     """为给定主题生成3个候选剧本（分3次API调用，每次一个版本）。
@@ -497,30 +515,14 @@ def generate_scripts(
     if reference_structure is None:
         reference_structure = _auto_match_structure(theme, all_structures)
 
-    # 3. 构建素材上下文
-    material_context = build_material_context()
-
-    # 4. 构建用户素材描述
-    custom_materials_text = ""
-    if custom_materials:
-        custom_materials_text = "\n## 用户上传素材\n" + "\n".join(
-            f"- {m}" for m in custom_materials
-        )
-
-    # 5. 构建公共上下文
-    structure_summary = _summarize_structure(reference_structure)
-    base_context = f"""## 用户主题
-{theme}
-
-## 用户偏好
-{user_preferences or "无特殊偏好，根据主题自由发挥"}
-
-## 参考的爆款结构
-{structure_summary}
-
-## 可用素材
-{material_context}
-{custom_materials_text}"""
+    # 3. 构建公共上下文
+    base_context = _build_base_context(
+        theme,
+        reference_structure,
+        custom_materials,
+        user_preferences,
+        custom_material_index=custom_material_index,
+    )
 
     # 6. 并发生成3个版本（3个API调用同时发出）
     scripts = []
@@ -603,6 +605,7 @@ def generate_scripts_streaming(
     theme: str,
     reference_structure: Optional[dict] = None,
     custom_materials: Optional[list[str]] = None,
+    custom_material_index: Optional[dict] = None,
     user_preferences: str = "",
     on_progress: Optional[Callable[[str, dict | None], None]] = None,
 ) -> dict:
@@ -622,27 +625,13 @@ def generate_scripts_streaming(
     if reference_structure is None:
         reference_structure = _auto_match_structure(theme, all_structures)
 
-    material_context = build_material_context()
-
-    custom_materials_text = ""
-    if custom_materials:
-        custom_materials_text = "\n## 用户上传素材\n" + "\n".join(
-            f"- {m}" for m in custom_materials
-        )
-
-    structure_summary = _summarize_structure(reference_structure)
-    base_context = f"""## 用户主题
-{theme}
-
-## 用户偏好
-{user_preferences or "无特殊偏好，根据主题自由发挥"}
-
-## 参考的爆款结构
-{structure_summary}
-
-## 可用素材
-{material_context}
-{custom_materials_text}"""
+    base_context = _build_base_context(
+        theme,
+        reference_structure,
+        custom_materials,
+        user_preferences,
+        custom_material_index=custom_material_index,
+    )
 
     def _generate_one(vc: dict) -> dict:
         version = vc["version"]

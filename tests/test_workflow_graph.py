@@ -57,6 +57,7 @@ class WorkflowGraphTest(unittest.TestCase):
             "theme": "补考",
             "reference_structure": {"video_name": "ref.mp4"},
             "materials": [],
+            "material_index": {"materials": []},
             "selected_script": {"version": "high_click", "title": "简略"},
         })
 
@@ -69,6 +70,8 @@ class WorkflowGraphTest(unittest.TestCase):
             theme="补考",
             auto_fill_gaps=False,
             review_materials=True,
+            custom_materials=[],
+            custom_material_index={"materials": []},
         )
 
     @patch("agent.workflow_graph.compose_video")

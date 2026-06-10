@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from .config import config
 from .generated_asset_library import asset_index_context
 from .utils import load_cat_motions, load_sticker_catalog, find_sticker_files
 
+
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".webm", ".mkv"}
 
 STICKER_FILE_KEYWORDS = {
     "手机": ["phone", "phone-in-hand", "cartoon-phone"],
@@ -29,6 +32,272 @@ STICKER_FILE_KEYWORDS = {
     "奶茶": ["milk", "tea", "cup"],
     "外卖": ["food", "drink"],
 }
+
+BACKGROUND_CUES = ("背景", "办公室", "工位", "会议室", "教室", "宿舍", "茶水间", "卧室", "通勤", "车内", "background", "office", "room", "meeting", "classroom", "dorm")
+PROP_CUES = ("咖啡", "奶茶", "杯", "手机", "电脑", "键盘", "书", "试卷", "笔", "闹钟", "coffee", "tea", "cup", "phone", "computer", "keyboard", "book", "paper", "pen", "clock")
+STICKER_CUES = ("贴纸", "表情", "气泡", "消息", "通知", "sticker", "emoji", "bubble", "message")
+CAT_MOTION_CUES = ("猫", "动作", "meme", "cat", "motion")
+
+
+def match_user_materials(
+    scene: dict,
+    user_materials: list[str] | None,
+    user_material_index: dict[str, Any] | None = None,
+) -> list[dict]:
+    """Match user-uploaded files to a scene before local/AIGC assets."""
+    if not user_materials:
+        return []
+
+    scene_text = " ".join(
+        str(scene.get(key, ""))
+        for key in ("description", "subtitle", "emotion", "suggested_background", "suggested_prop")
+        if scene.get(key)
+    ).lower()
+    matches = []
+    used_files = set()
+    indexed_match = _best_indexed_user_cat_motion(scene_text, user_materials, user_material_index)
+    if indexed_match:
+        matches.append(indexed_match)
+        used_files.add(indexed_match["file"])
+
+    for material in user_materials:
+        if material in used_files:
+            continue
+        path = Path(str(material))
+        suffix = path.suffix.lower()
+        name = path.stem.lower()
+        if suffix in IMAGE_EXTENSIONS:
+            if _material_matches(name, scene_text, scene.get("suggested_background", ""), BACKGROUND_CUES):
+                matches.append(_user_match("background", material, "文件名与背景/场景语义匹配"))
+                used_files.add(material)
+                continue
+            if _material_matches(name, scene_text, scene.get("suggested_prop", ""), PROP_CUES):
+                matches.append(_user_match("prop", material, "文件名与道具语义匹配"))
+                used_files.add(material)
+                continue
+            if _material_matches(name, scene_text, "", STICKER_CUES):
+                matches.append(_user_match("sticker", material, "文件名与贴纸/信息提示语义匹配"))
+                used_files.add(material)
+        elif suffix in VIDEO_EXTENSIONS or _looks_like_upload_video(path):
+            if _material_matches(name, scene_text, "", CAT_MOTION_CUES):
+                matches.append(_user_match("cat_motion", material, "文件名与猫动作语义匹配"))
+                used_files.add(material)
+            elif _material_matches(name, scene_text, "", ("audio", "sound", "voice", "音频", "声音")):
+                matches.append(_user_match("audio", material, "文件名与音频语义匹配"))
+                used_files.add(material)
+            else:
+                matches.append(_user_match("cat_motion", material, "用户上传视频优先作为猫动作素材"))
+                used_files.add(material)
+
+    return _dedupe_user_matches(matches, used_files)
+
+
+def _best_indexed_user_cat_motion(
+    scene_text: str,
+    user_materials: list[str],
+    user_material_index: dict[str, Any] | None,
+) -> dict | None:
+    indexed = _indexed_materials_by_file(user_material_index)
+    if not indexed:
+        return None
+
+    candidates = []
+    for material in user_materials:
+        item = indexed.get(str(material))
+        if not item:
+            continue
+        path = Path(str(material))
+        material_type = str(item.get("type") or _material_type_from_path(path))
+        asset_kind = str(item.get("asset_kind") or "")
+        if material_type != "video" and asset_kind != "cat_motion":
+            continue
+        if asset_kind and asset_kind != "cat_motion":
+            continue
+        score = _score_indexed_material(scene_text, item)
+        candidates.append((score, material, item))
+
+    if not candidates:
+        return None
+    candidates.sort(key=lambda value: value[0], reverse=True)
+    best_score, file_path, item = candidates[0]
+    if best_score <= 0:
+        return None
+    description = _indexed_motion_description(item, Path(str(file_path)))
+    return {
+        "kind": "cat_motion",
+        "file": str(file_path),
+        "motion_id": str(item.get("motion_id") or _motion_id_for_indexed_file(user_material_index, str(file_path)) or "user"),
+        "source": "user",
+        "reason": f"视觉描述匹配：{description[:40]}",
+        "description": description,
+        "score": best_score,
+        "motion_tags": item.get("motion_tags", {}),
+    }
+
+
+def _motion_id_for_indexed_file(user_material_index: dict[str, Any] | None, file_path: str) -> str:
+    if not isinstance(user_material_index, dict):
+        return ""
+    motion_index = 0
+    for item in user_material_index.get("materials", []) or []:
+        if not isinstance(item, dict):
+            continue
+        material_file = str(item.get("file") or "").strip()
+        if not material_file:
+            continue
+        path = Path(material_file)
+        material_type = str(item.get("type") or _material_type_from_path(path))
+        asset_kind = str(item.get("asset_kind") or "")
+        if material_type != "video" and asset_kind != "cat_motion":
+            continue
+        if asset_kind and asset_kind != "cat_motion":
+            continue
+        current_id = f"user:{motion_index}"
+        if material_file == file_path:
+            return current_id
+        motion_index += 1
+    return ""
+
+
+def _indexed_materials_by_file(user_material_index: dict[str, Any] | None) -> dict[str, dict]:
+    if not isinstance(user_material_index, dict):
+        return {}
+    result = {}
+    for item in user_material_index.get("materials", []) or []:
+        if isinstance(item, dict) and item.get("file"):
+            result[str(item["file"])] = item
+    return result
+
+
+def _score_indexed_material(scene_text: str, item: dict) -> int:
+    searchable = [_indexed_motion_description(item)]
+    entry = item.get("cat_motion_entry", {})
+    entry_tags = entry.get("motion_tags", {}) if isinstance(entry, dict) else {}
+    tags = item.get("motion_tags", {})
+    if isinstance(tags, dict):
+        for values in tags.values():
+            if isinstance(values, list):
+                searchable.extend(str(value) for value in values)
+            elif values:
+                searchable.append(str(values))
+    if isinstance(entry_tags, dict):
+        for values in entry_tags.values():
+            if isinstance(values, list):
+                searchable.extend(str(value) for value in values)
+            elif values:
+                searchable.append(str(values))
+    keywords = item.get("search_keywords", [])
+    if isinstance(keywords, list):
+        searchable.extend(str(keyword) for keyword in keywords)
+    material_text = " ".join(searchable).lower()
+    score = 0
+    for token in _scene_tokens(scene_text):
+        if token and token in material_text:
+            score += 3 if len(token) >= 2 else 1
+    for cue_group in (
+        ("焦虑", "慌张", "着急", "迟到", "赶路", "堵车", "骑车"),
+        ("老板", "领导", "讲话", "催", "开会", "布置"),
+        ("撒娇", "可爱", "求饶", "女友", "恋爱"),
+        ("崩溃", "哭", "破防", "无语"),
+    ):
+        if any(cue in scene_text for cue in cue_group) and any(cue in material_text for cue in cue_group):
+            score += 5
+    avoid = []
+    if isinstance(tags, dict) and isinstance(tags.get("avoid"), list):
+        avoid = [str(item).lower() for item in tags.get("avoid", [])]
+    if any(token and token in scene_text for token in avoid):
+        score -= 10
+    return score
+
+
+def _indexed_motion_description(item: dict, path: Path | None = None) -> str:
+    entry = item.get("cat_motion_entry", {})
+    if isinstance(entry, dict) and entry.get("description"):
+        return str(entry.get("description") or "").strip()
+    if item.get("description"):
+        return str(item.get("description") or "").strip()
+    return path.name if path else ""
+
+
+def _scene_tokens(text: str) -> list[str]:
+    tokens = []
+    for raw in text.replace("，", " ").replace("。", " ").replace("、", " ").split():
+        raw = raw.strip().lower()
+        if raw:
+            tokens.append(raw)
+    chinese_keywords = (
+        "焦虑", "慌张", "着急", "迟到", "赶路", "堵车", "骑车", "摩托", "老板", "领导",
+        "讲话", "开会", "催", "撒娇", "可爱", "求饶", "女友", "恋爱", "崩溃", "哭",
+        "破防", "无语", "放松", "开心", "工作", "办公", "电脑", "奶茶", "咖啡",
+    )
+    tokens.extend(keyword for keyword in chinese_keywords if keyword in text)
+    return tokens
+
+
+def _material_type_from_path(path: Path) -> str:
+    suffix = path.suffix.lower()
+    if suffix in IMAGE_EXTENSIONS:
+        return "image"
+    if suffix in VIDEO_EXTENSIONS or _looks_like_upload_video(path):
+        return "video"
+    return "unknown"
+
+
+def _user_match(kind: str, file_path: str, reason: str) -> dict:
+    return {
+        "kind": kind,
+        "file": file_path,
+        "source": "user",
+        "reason": reason,
+    }
+
+
+def _material_matches(name: str, scene_text: str, target_text: str, cues: tuple[str, ...]) -> bool:
+    combined = f"{scene_text} {target_text}".lower()
+    for cue in cues:
+        cue_lower = cue.lower()
+        if cue_lower in name and (cue_lower in combined or _semantic_cue_matches(cue_lower, combined)):
+            return True
+    return False
+
+
+def _semantic_cue_matches(cue: str, text: str) -> bool:
+    groups = [
+        ("office", ("办公室", "工位", "办公", "会议")),
+        ("background", ("背景", "场景")),
+        ("room", ("房间", "宿舍", "卧室", "会议室", "茶水间")),
+        ("coffee", ("咖啡", "续命")),
+        ("tea", ("奶茶", "饮料")),
+        ("cup", ("杯", "咖啡", "奶茶", "饮料")),
+        ("phone", ("手机", "消息", "通知", "聊天")),
+        ("computer", ("电脑", "办公", "工位")),
+        ("keyboard", ("键盘", "电脑", "办公")),
+    ]
+    for token, aliases in groups:
+        if cue == token and any(alias in text for alias in aliases):
+            return True
+    return False
+
+
+def _dedupe_user_matches(matches: list[dict], used_files: set[str]) -> list[dict]:
+    del used_files
+    selected = []
+    seen_kinds = set()
+    for match in matches:
+        kind = match["kind"]
+        if kind in seen_kinds and kind in {"background", "prop", "cat_motion", "audio"}:
+            continue
+        selected.append(match)
+        seen_kinds.add(kind)
+    return selected
+
+
+def _looks_like_upload_video(path: Path) -> bool:
+    name = path.name.lower()
+    return any(
+        token in name
+        for token in ("_mat_mp4", "_mat_mov", "_mat_webm", "_mat_mkv", "_mat_avi", "uploaded_mp4")
+    )
 
 
 def match_cat_motion(

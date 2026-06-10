@@ -164,6 +164,226 @@ class CatRolePlannerTest(unittest.TestCase):
         self.assertEqual(len(set(motion_ids)), 2)
         self.assertNotIn("16", motion_ids)
 
+    @patch("agent.cat_role_planner.client.chat_json")
+    @patch("agent.cat_role_planner.load_cat_motions")
+    def test_role_assignment_preserves_user_uploaded_motion(
+        self,
+        load_cat_motions,
+        chat_json,
+    ):
+        load_cat_motions.return_value = {
+            "1": {"description": "默认办公猫", "motion_tags": {}},
+            "4": {"description": "讲话猫", "motion_tags": {}},
+        }
+        chat_json.return_value = {
+            "scenes": [
+                {
+                    "scene_id": 1,
+                    "cat_roles": [
+                        {"dialogue_index": 0, "motion_id": "4", "reason": "模型想替换"},
+                        {"dialogue_index": 1, "motion_id": "1", "reason": "同事回应"},
+                    ],
+                }
+            ]
+        }
+        scenes = [
+            {
+                "scene_id": 1,
+                "cat_motion_id": "user",
+                "cat_motion_file": "/tmp/uploaded_cat.mp4",
+                "cat_motion_source": "user",
+                "dialogues": [
+                    {
+                        "speaker": "我",
+                        "line": "这是用户上传的猫",
+                        "motion_id": "user",
+                        "motion_file": "/tmp/uploaded_cat.mp4",
+                        "motion_source": "user",
+                    },
+                    {"speaker": "同事", "line": "我用内置素材"},
+                ],
+            }
+        ]
+
+        planned = cat_role_planner.assign_cat_role_motions(scenes)
+        dialogues = planned[0]["dialogues"]
+
+        self.assertEqual(dialogues[0]["motion_id"], "user")
+        self.assertEqual(dialogues[0]["motion_file"], "/tmp/uploaded_cat.mp4")
+        self.assertEqual(dialogues[0]["motion_source"], "user")
+        self.assertEqual(dialogues[1]["motion_id"], "1")
+
+    @patch("agent.cat_role_planner.client.chat_json")
+    @patch("agent.cat_role_planner.load_cat_motions")
+    def test_role_assignment_can_choose_distinct_uploaded_user_motions(
+        self,
+        load_cat_motions,
+        chat_json,
+    ):
+        load_cat_motions.return_value = {
+            "1": {"description": "本地兜底猫", "motion_tags": {}},
+        }
+        chat_json.return_value = {
+            "scenes": [
+                {
+                    "scene_id": 1,
+                    "cat_roles": [
+                        {"dialogue_index": 0, "motion_id": "user:0", "reason": "本人焦虑赶路"},
+                        {"dialogue_index": 1, "motion_id": "user:1", "reason": "老板讲话催促"},
+                    ],
+                }
+            ]
+        }
+        user_motion_catalog = {
+            "user:0": {
+                "description": "用户上传：焦虑赶路猫",
+                "file_path": "/tmp/anxious_road.mp4",
+                "source": "user",
+                "motion_tags": {"actions": ["赶路"], "emotions": ["焦虑"]},
+            },
+            "user:1": {
+                "description": "用户上传：碎碎念讲话猫",
+                "file_path": "/tmp/talking_boss.mp4",
+                "source": "user",
+                "motion_tags": {"actions": ["讲话"], "roles": ["老板"]},
+            },
+        }
+        scenes = [
+            {
+                "scene_id": 1,
+                "description": "迟到路上老板打电话催",
+                "dialogues": [
+                    {"speaker": "我", "line": "完了完了要迟到了"},
+                    {"speaker": "老板", "line": "你人到哪里了"},
+                ],
+            }
+        ]
+
+        planned = cat_role_planner.assign_cat_role_motions(
+            scenes,
+            user_motion_catalog=user_motion_catalog,
+        )
+        dialogues = planned[0]["dialogues"]
+
+        self.assertEqual(dialogues[0]["motion_id"], "user:0")
+        self.assertEqual(dialogues[0]["motion_file"], "/tmp/anxious_road.mp4")
+        self.assertEqual(dialogues[0]["motion_source"], "user")
+        self.assertEqual(dialogues[1]["motion_id"], "user:1")
+        self.assertEqual(dialogues[1]["motion_file"], "/tmp/talking_boss.mp4")
+        self.assertEqual(dialogues[1]["motion_source"], "user")
+
+    @patch("agent.cat_role_planner.client.chat_json")
+    @patch("agent.cat_role_planner.load_cat_motions")
+    def test_role_assignment_falls_back_to_local_when_user_motions_are_insufficient(
+        self,
+        load_cat_motions,
+        chat_json,
+    ):
+        load_cat_motions.return_value = {
+            "4": {"description": "本地老板讲话猫", "motion_tags": {"roles": ["老板"]}},
+        }
+        chat_json.return_value = {
+            "scenes": [
+                {
+                    "scene_id": 1,
+                    "cat_roles": [
+                        {"dialogue_index": 0, "motion_id": "user:0", "reason": "用户素材给本人"},
+                        {"dialogue_index": 1, "motion_id": "user:0", "reason": "模型错误复用"},
+                    ],
+                }
+            ]
+        }
+        user_motion_catalog = {
+            "user:0": {
+                "description": "用户上传：焦虑赶路猫",
+                "file_path": "/tmp/anxious_road.mp4",
+                "source": "user",
+                "motion_tags": {"actions": ["赶路"], "emotions": ["焦虑"]},
+            }
+        }
+        scenes = [
+            {
+                "scene_id": 1,
+                "description": "迟到路上老板打电话催",
+                "dialogues": [
+                    {"speaker": "我", "line": "完了完了要迟到了"},
+                    {"speaker": "老板", "line": "你人到哪里了"},
+                ],
+            }
+        ]
+
+        planned = cat_role_planner.assign_cat_role_motions(
+            scenes,
+            user_motion_catalog=user_motion_catalog,
+        )
+        dialogues = planned[0]["dialogues"]
+
+        self.assertEqual(dialogues[0]["motion_id"], "user:0")
+        self.assertEqual(dialogues[0]["motion_file"], "/tmp/anxious_road.mp4")
+        self.assertEqual(dialogues[1]["motion_id"], "4")
+        self.assertTrue(dialogues[1]["motion_file"].endswith("/assets/cat-motions/4.mp4"))
+
+    @patch("agent.cat_role_planner.client.chat_json")
+    @patch("agent.cat_role_planner.load_cat_motions")
+    def test_role_assignment_can_reselect_automatically_bound_user_motion(
+        self,
+        load_cat_motions,
+        chat_json,
+    ):
+        load_cat_motions.return_value = {
+            "4": {"description": "本地老板讲话猫", "motion_tags": {"roles": ["老板"]}},
+        }
+        chat_json.return_value = {
+            "scenes": [
+                {
+                    "scene_id": 1,
+                    "cat_roles": [
+                        {"dialogue_index": 0, "motion_id": "user:1", "reason": "老板更适合讲话素材"},
+                    ],
+                }
+            ]
+        }
+        user_motion_catalog = {
+            "user:0": {
+                "description": "用户上传：焦虑赶路猫",
+                "file_path": "/tmp/anxious_road.mp4",
+                "source": "user",
+                "motion_tags": {"actions": ["赶路"], "emotions": ["焦虑"]},
+            },
+            "user:1": {
+                "description": "用户上传：老板讲话猫",
+                "file_path": "/tmp/talking_boss.mp4",
+                "source": "user",
+                "motion_tags": {"actions": ["讲话"], "roles": ["老板"]},
+            },
+        }
+        scenes = [
+            {
+                "scene_id": 1,
+                "description": "老板打电话催迟到的我",
+                "dialogues": [
+                    {
+                        "speaker": "老板",
+                        "line": "你到底到哪了",
+                        "motion_id": "user:0",
+                        "motion_file": "/tmp/anxious_road.mp4",
+                        "motion_source": "user",
+                        "motion_binding": "auto_user_match",
+                    },
+                    {"speaker": "我", "line": "我堵在路上了"},
+                ],
+            }
+        ]
+
+        planned = cat_role_planner.assign_cat_role_motions(
+            scenes,
+            user_motion_catalog=user_motion_catalog,
+        )
+        dialogue = planned[0]["dialogues"][0]
+
+        self.assertEqual(dialogue["motion_id"], "user:1")
+        self.assertEqual(dialogue["motion_file"], "/tmp/talking_boss.mp4")
+
 
 if __name__ == "__main__":
     unittest.main()

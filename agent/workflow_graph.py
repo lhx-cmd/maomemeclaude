@@ -28,6 +28,7 @@ class WorkflowState(TypedDict, total=False):
     theme: str
     reference_structure: dict
     materials: list[str]
+    material_index: dict
     preference: str
     scripts: dict
     selected_script: dict
@@ -94,6 +95,7 @@ def _generate_briefs_node(state: WorkflowState) -> dict[str, Any]:
         theme=state.get("theme", ""),
         reference_structure=state.get("reference_structure"),
         custom_materials=state.get("materials"),
+        custom_material_index=state.get("material_index"),
         user_preferences=state.get("preference", ""),
         on_progress=state.get("on_progress"),
     )
@@ -112,6 +114,7 @@ def _expand_detail_node(state: WorkflowState) -> dict[str, Any]:
             theme=state.get("theme", ""),
             reference_structure=state.get("reference_structure"),
             custom_materials=state.get("materials"),
+            custom_material_index=state.get("material_index"),
         )
     except Exception as exc:
         raise WorkflowStepError("expand_detail", f"剧本展开失败: {exc}") from exc
@@ -131,6 +134,8 @@ def _build_storyboard_node(state: WorkflowState) -> dict[str, Any]:
             theme=state.get("theme", ""),
             auto_fill_gaps=False,
             review_materials=True,
+            custom_materials=state.get("materials") or [],
+            custom_material_index=state.get("material_index"),
         )
     except Exception as exc:
         raise WorkflowStepError("build_storyboard", f"分镜生成失败: {exc}") from exc

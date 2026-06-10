@@ -14,6 +14,7 @@
 - **贴纸/道具审核**：贴纸只在剧情需要时出现，并尽量放在猫爪、桌面、通知区等合理位置。
 - **素材缺口补全**：检测背景、道具、猫动作、贴纸等缺口；视频生成阶段再调用 Seedream 补齐昂贵素材。
 - **生成素材沉淀复用**：Seedream 生成的背景、道具、贴纸会写入 metadata 和 `index.json`，后续可按描述复用。
+- **猫 Meme 音频素材库**：猫动作视频的原声音轨会抽取到 `assets/audio/cat-motions/`，并生成带描述和标签的 `index.json`。
 - **FFmpeg 视频合成**：输出 1920x1080、16:9 MP4，包含绿幕抠像、背景、猫动作、贴纸、字幕和多猫布局。
 - **自然语言编辑**：支持用中文指令调整分镜，例如“开头更抓人”“把崩溃镜头提前”“加个奶茶贴纸”。
 
@@ -67,6 +68,7 @@ maomemeclaude/
 │   └── utils.py                 # 文件、JSON、视频工具
 ├── assets/
 │   ├── baokuan/                 # 参考爆款视频和结构 JSON
+│   ├── audio/                   # 猫动作原声音频素材 + index.json
 │   ├── cat-motions/             # 猫动作 MP4 素材
 │   ├── stickers/                # 贴纸素材库
 │   └── generated/
@@ -164,6 +166,7 @@ http://localhost:8080
 | --- | --- |
 | 爆款结构 | 内置 5 个参考视频及结构分析 JSON |
 | 猫动作素材 | 26 个 MP4，带动作、情绪、场景标签 |
+| 猫原声音频 | 从猫动作 MP4 抽取的 M4A，带源视频、描述、标签索引 |
 | 贴纸素材 | 多分类 PNG/JPG 素材库 |
 | 生成背景 | `assets/generated/backgrounds/index.json` 汇总描述 |
 | 生成道具 | `assets/generated/props/index.json` 汇总描述 |
@@ -173,6 +176,10 @@ http://localhost:8080
 - 背景统一生成 16:9，Seedream size 为 `2560x1440`。
 - 道具/贴纸生成透明或近透明方图，Seedream size 为 `1920x1920`。
 - 每个生成素材会保存 `.meta.json`，并刷新对应 `index.json`。
+- 猫动作原声音频可用以下命令重建：
+  ```bash
+  python3 scripts/rebuild_audio_assets.py --force
+  ```
 - 后续生成时优先按描述匹配已有素材，减少重复调用 Seedream。
 
 ## API 概览

@@ -89,7 +89,7 @@ def detect_gaps(storyboard_scenes: list[dict]) -> dict:
 
         # 检查是否需要背景生成
         suggested_bg = scene.get("suggested_background", "")
-        if suggested_bg:
+        if suggested_bg and not _scene_has_asset(scene, "背景"):
             gaps.append({
                 "scene_id": scene_id,
                 "gap_type": "背景缺失",
@@ -104,7 +104,7 @@ def detect_gaps(storyboard_scenes: list[dict]) -> dict:
 
         # 检查是否需要道具生成
         suggested_prop = scene.get("suggested_prop", "")
-        if suggested_prop:
+        if suggested_prop and not _scene_has_asset(scene, "道具"):
             gaps.append({
                 "scene_id": scene_id,
                 "gap_type": "道具缺失",
@@ -140,6 +140,31 @@ def detect_gaps(storyboard_scenes: list[dict]) -> dict:
         "gaps": gaps,
         "fill_summary": "，".join(fill_summary_parts),
     }
+
+
+def _scene_has_asset(scene: dict, asset_label: str) -> bool:
+    if asset_label == "背景" and (scene.get("background_file") or scene.get("background")):
+        return True
+    return any(
+        _asset_matches_label(asset, asset_label)
+        for asset in scene.get("generated_assets", [])
+        if isinstance(asset, dict) and asset.get("file")
+    )
+
+
+def _asset_matches_label(asset: dict, asset_label: str) -> bool:
+    asset_type = str(asset.get("type", ""))
+    if asset_label in asset_type:
+        return True
+    if asset.get("source") == "user":
+        kind = str(asset.get("kind", ""))
+        if asset_label == "背景" and ("背景" in asset_type or kind == "background"):
+            return True
+        if asset_label == "道具" and ("道具" in asset_type or kind == "prop"):
+            return True
+        if asset_label == "贴纸" and ("贴纸" in asset_type or kind == "sticker"):
+            return True
+    return False
 
 
 def format_gaps_for_display(gap_report: dict) -> str:

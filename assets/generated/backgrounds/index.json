@@ -23,30 +23,30 @@
     },
     {
       "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/backgrounds/scene_6_bg.png",
-      "description": "公司茶水间",
-      "prompt": "A simple 16:9 landscape cartoon background scene of 公司茶水间, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
-      "revised_prompt": "A simple 16:9 landscape cartoon background scene of 公司茶水间, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
+      "description": "商业街街口",
+      "prompt": "A simple 16:9 landscape cartoon background scene of 商业街街口, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
+      "revised_prompt": "A simple 16:9 landscape cartoon background scene of 商业街街口, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
       "size": "2560x1440",
       "style": "16:9 landscape, flat illustration, cartoon background, soft colors, minimal, no characters",
-      "generated_at": "2026-06-07T16:18:22"
+      "generated_at": "2026-06-09T16:09:47"
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/backgrounds/scene_2_bg.png",
+      "description": "城市拥堵马路",
+      "prompt": "A simple 16:9 landscape cartoon background scene of 城市拥堵马路, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
+      "revised_prompt": "A simple 16:9 landscape cartoon background scene of 城市拥堵马路, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
+      "size": "2560x1440",
+      "style": "16:9 landscape, flat illustration, cartoon background, soft colors, minimal, no characters",
+      "generated_at": "2026-06-09T16:09:45"
     },
     {
       "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/backgrounds/scene_3_bg.png",
-      "description": "办公室工位",
-      "prompt": "A simple 16:9 landscape cartoon background scene of 办公室工位, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
-      "revised_prompt": "A simple 16:9 landscape cartoon background scene of 办公室工位, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
+      "description": "城市马路人行道",
+      "prompt": "A simple 16:9 landscape cartoon background scene of 城市马路人行道, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
+      "revised_prompt": "A simple 16:9 landscape cartoon background scene of 城市马路人行道, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
       "size": "2560x1440",
       "style": "16:9 landscape, flat illustration, cartoon background, soft colors, minimal, no characters",
-      "generated_at": "2026-06-08T10:05:51"
-    },
-    {
-      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/backgrounds/scene_1_bg.png",
-      "description": "卧室床铺",
-      "prompt": "A simple 16:9 landscape cartoon background scene of 卧室床铺, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
-      "revised_prompt": "A simple 16:9 landscape cartoon background scene of 卧室床铺, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
-      "size": "2560x1440",
-      "style": "16:9 landscape, flat illustration, cartoon background, soft colors, minimal, no characters",
-      "generated_at": "2026-06-08T11:37:37"
+      "generated_at": "2026-06-09T16:09:45"
     },
     {
       "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/backgrounds/scene_5_bg.png",
@@ -56,6 +56,15 @@
       "size": "2560x1440",
       "style": "16:9 landscape, flat illustration, cartoon background, soft colors, minimal, no characters",
       "generated_at": "2026-06-07T15:43:58"
+    },
+    {
+      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/backgrounds/scene_1_bg.png",
+      "description": "户外商业街路口",
+      "prompt": "A simple 16:9 landscape cartoon background scene of 户外商业街路口, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
+      "revised_prompt": "A simple 16:9 landscape cartoon background scene of 户外商业街路口, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
+      "size": "2560x1440",
+      "style": "16:9 landscape, flat illustration, cartoon background, soft colors, minimal, no characters",
+      "generated_at": "2026-06-09T16:09:44"
     },
     {
       "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/backgrounds/scene_7_bg.png",
@@ -101,15 +110,6 @@
       "size": "2560x1440",
       "style": "16:9 landscape, flat illustration, cartoon background, soft colors, minimal, no characters",
       "generated_at": "2026-06-07T15:44:12"
-    },
-    {
-      "file": "/Users/shy/Documents/Agent/maomemeclaude/assets/generated/backgrounds/scene_2_bg.png",
-      "description": "通勤车内",
-      "prompt": "A simple 16:9 landscape cartoon background scene of 通勤车内, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
-      "revised_prompt": "A simple 16:9 landscape cartoon background scene of 通勤车内, soft colors, minimal detail, suitable as video background, flat illustration style, no characters in the scene",
-      "size": "2560x1440",
-      "style": "16:9 landscape, flat illustration, cartoon background, soft colors, minimal, no characters",
-      "generated_at": "2026-06-08T11:37:37"
     }
   ]
 }

@@ -301,7 +301,10 @@ def _is_generated_prop(asset: dict[str, Any]) -> bool:
 
 
 def _is_manual_overlay(item: dict[str, Any]) -> bool:
-    return str(item.get("category", "")) == "user_requested" or item.get("source") == "manual"
+    return (
+        str(item.get("category", "")) == "user_requested"
+        or item.get("source") in {"manual", "user"}
+    )
 
 
 def _is_decorative_overlay(item: dict[str, Any]) -> bool:

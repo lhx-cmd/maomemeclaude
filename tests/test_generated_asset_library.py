@@ -92,6 +92,37 @@ class GeneratedAssetLibraryTest(unittest.TestCase):
             finally:
                 generated_asset_library.config.generated_dir = old_generated_dir
 
+    def test_background_reuse_handles_short_alias_description(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            old_generated_dir = generated_asset_library.config.generated_dir
+            generated_asset_library.config.generated_dir = Path(tmp)
+            try:
+                bg = Path(tmp) / "backgrounds" / "meeting.png"
+                bg.parent.mkdir(parents=True)
+                bg.touch()
+                save_json(bg.parent / "index.json", {
+                    "asset_kind": "background",
+                    "assets": [
+                        {
+                            "file": str(bg),
+                            "description": "公司会议室",
+                            "prompt": "",
+                            "size": "2560x1440",
+                            "style": "16:9 cartoon",
+                        }
+                    ],
+                })
+
+                match = generated_asset_library.find_reusable_asset(
+                    "background",
+                    "会议室",
+                    expected_size="2560x1440",
+                )
+
+                self.assertEqual(match, bg)
+            finally:
+                generated_asset_library.config.generated_dir = old_generated_dir
+
     def test_seedream_background_reuses_asset_without_api_call(self):
         with tempfile.TemporaryDirectory() as tmp:
             old_generated_dir = generated_asset_library.config.generated_dir

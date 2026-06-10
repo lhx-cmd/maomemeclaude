@@ -37,7 +37,10 @@ CAT_ROLE_MOTION_PROMPT = """你是猫meme短视频的角色动作选角导演。
 """
 
 
-def assign_cat_role_motions(scenes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def assign_cat_role_motions(
+    scenes: list[dict[str, Any]],
+    user_motion_catalog: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     """Attach model-selected cat motion files to scene dialogues."""
     target_scenes = [
         scene for scene in scenes
@@ -46,7 +49,7 @@ def assign_cat_role_motions(scenes: list[dict[str, Any]]) -> list[dict[str, Any]
     if not target_scenes:
         return scenes
 
-    catalog = load_cat_motions()
+    catalog = _combined_motion_catalog(user_motion_catalog)
     try:
         review = client.chat_json(
             system_prompt=CAT_ROLE_MOTION_PROMPT,
@@ -67,10 +70,11 @@ def apply_cat_role_decisions(
     scenes: list[dict[str, Any]],
     decisions: list[dict[str, Any]],
     catalog: dict[str, Any] | None = None,
+    user_motion_catalog: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Apply model role-motion decisions with duplicate and multi-cat safeguards."""
     if catalog is None:
-        catalog = load_cat_motions()
+        catalog = _combined_motion_catalog(user_motion_catalog)
     scenes_by_id = {scene.get("scene_id"): scene for scene in scenes}
     valid_motion_ids = {
         motion_id
@@ -89,6 +93,9 @@ def apply_cat_role_decisions(
             except (TypeError, ValueError):
                 continue
             if dialogue_index < 0 or dialogue_index >= len(dialogues):
+                continue
+            if _is_locked_user_motion(dialogues[dialogue_index]):
+                used_motion_ids.add(str(dialogues[dialogue_index].get("motion_id") or "user"))
                 continue
             motion_id = str(role.get("motion_id", "")).strip()
             if motion_id not in valid_motion_ids:
@@ -113,6 +120,14 @@ def apply_cat_role_decisions(
     return _fallback_assignments(scenes, catalog)
 
 
+def _combined_motion_catalog(user_motion_catalog: dict[str, Any] | None = None) -> dict[str, Any]:
+    catalog: dict[str, Any] = {}
+    if user_motion_catalog:
+        catalog.update(user_motion_catalog)
+    catalog.update(load_cat_motions())
+    return catalog
+
+
 def _build_payload(scenes: list[dict[str, Any]], catalog: dict[str, Any]) -> dict[str, Any]:
     return {
         "motion_catalog": [
@@ -121,7 +136,7 @@ def _build_payload(scenes: list[dict[str, Any]], catalog: dict[str, Any]) -> dic
                 "description": data.get("description", ""),
                 "tags": data.get("motion_tags", {}),
             }
-            for motion_id, data in sorted(catalog.items(), key=lambda item: int(item[0]))
+            for motion_id, data in sorted(catalog.items(), key=lambda item: _motion_sort_key(item[0]))
         ],
         "scenes": [
             {
@@ -150,9 +165,11 @@ def _fallback_assignments(scenes: list[dict[str, Any]], catalog: dict[str, Any])
         used_motion_ids = {
             str(dialogue.get("motion_id") or "")
             for dialogue in dialogues
-            if _motion_is_available(str(dialogue.get("motion_id") or ""), catalog, set())
+            if _is_user_motion(dialogue) or _motion_is_available(str(dialogue.get("motion_id") or ""), catalog, set())
         }
         for dialogue in dialogues:
+            if _is_locked_user_motion(dialogue):
+                continue
             if not dialogue.get("motion_id"):
                 motion_id = _choose_replacement_motion(scene, dialogue, catalog, used_motion_ids)
                 if not motion_id:
@@ -179,10 +196,24 @@ def _choose_replacement_motion(
     for motion_id in preferred_ids:
         if _motion_is_available(motion_id, catalog, used_motion_ids):
             return motion_id
-    for motion_id in sorted(catalog.keys(), key=lambda item: int(item)):
+    for motion_id in sorted(catalog.keys(), key=_motion_sort_key):
         if _motion_is_available(motion_id, catalog, used_motion_ids):
             return motion_id
     return ""
+
+
+def _motion_sort_key(motion_id: Any) -> tuple[int, int, str]:
+    motion_text = str(motion_id)
+    if motion_text.startswith("user:"):
+        try:
+            user_index = int(motion_text.split(":", 1)[1])
+        except (TypeError, ValueError):
+            user_index = 999
+        return (0, user_index, motion_text)
+    try:
+        return (1, int(motion_text), motion_text)
+    except (TypeError, ValueError):
+        return (2, 0, motion_text)
 
 
 def _motion_id_for_dialogue(dialogue: dict[str, Any], catalog: dict[str, Any]) -> str:
@@ -213,6 +244,17 @@ def _motion_is_available(
     )
 
 
+def _is_user_motion(dialogue: dict[str, Any]) -> bool:
+    return (
+        dialogue.get("motion_source") == "user"
+        or str(dialogue.get("motion_id") or "") == "user"
+    ) and bool(str(dialogue.get("motion_file") or "").strip())
+
+
+def _is_locked_user_motion(dialogue: dict[str, Any]) -> bool:
+    return _is_user_motion(dialogue) and dialogue.get("motion_binding") != "auto_user_match"
+
+
 def _is_multi_cat_motion(motion_id: str, catalog: dict[str, Any]) -> bool:
     data = catalog.get(str(motion_id), {})
     description = str(data.get("description", ""))
@@ -235,7 +277,13 @@ def _attach_motion(
 ) -> None:
     data = catalog.get(motion_id, {})
     dialogue["motion_id"] = motion_id
-    dialogue["motion_file"] = str(config.cat_motions_dir / f"{motion_id}.mp4")
+    if data.get("source") == "user" and data.get("file_path"):
+        dialogue["motion_file"] = str(data["file_path"])
+        dialogue["motion_source"] = "user"
+    else:
+        dialogue["motion_file"] = str(config.cat_motions_dir / f"{motion_id}.mp4")
+        dialogue.pop("motion_source", None)
+    dialogue.pop("motion_binding", None)
     dialogue["motion_desc"] = data.get("description", "")
     if reason:
         dialogue["motion_reason"] = str(reason)

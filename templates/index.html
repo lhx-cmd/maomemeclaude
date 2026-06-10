@@ -658,18 +658,19 @@ async function doGenerateScripts() {
   });
 
   eventSource.addEventListener('error', (e) => {
+    let message = 'SSE 连接中断，请重试';
     try {
-      const data = JSON.parse(e.data);
-      document.getElementById('streamResults').innerHTML += `
-        <div class="script-stream-card" style="border-color:var(--danger)">
-          <span class="status-icon">❌</span> ${data.error}
-        </div>`;
+      if (e.data) {
+        const data = JSON.parse(e.data);
+        message = data.error || message;
+      }
     } catch (_) {
-      document.getElementById('streamResults').innerHTML += `
-        <div class="script-stream-card" style="border-color:var(--danger)">
-          <span class="status-icon">❌</span> SSE 连接中断，请重试
-        </div>`;
+      // Keep the generic network error message.
     }
+    document.getElementById('streamResults').innerHTML += `
+      <div class="script-stream-card" style="border-color:var(--danger)">
+        <span class="status-icon">❌</span> ${message}
+      </div>`;
     eventSource.close();
   });
 }
@@ -792,13 +793,15 @@ function renderStep3(data) {
   const sceneHTML = scenes.map(s => {
     const stickers = (s.stickers || []).map(st => {
       const fname = (st.file || '').split('/').pop() || '';
-      return `<span class="tag">🖼️ ${fname}</span>`;
+      const source = materialSourceLabel(st);
+      return `<span class="tag">🖼️ ${source}${fname}</span>`;
     }).join('');
 
     const genAssets = (s.generated_assets || []).map(ga => {
       if (ga.error) return `<span class="tag" style="color:var(--danger)">⚠️ ${ga.error}</span>`;
       const fname = (ga.file || '').split('/').pop() || '';
-      return `<span class="tag" style="color:var(--success)">🎨 生成: ${fname}</span>`;
+      const label = materialSourceLabel(ga) || (ga.reused ? '复用素材: ' : '生成素材: ');
+      return `<span class="tag" style="color:var(--success)">🎨 ${label}${fname}</span>`;
     }).join('');
 
     const dialogues = (s.dialogues || []).map(d => {
@@ -807,16 +810,34 @@ function renderStep3(data) {
       return line ? `<span class="tag">🐾 ${speaker}: ${line}</span>` : '';
     }).join('');
 
+    const renderedCats = (s.rendered_cats && s.rendered_cats.length ? s.rendered_cats : [{
+      speaker: '猫',
+      motion_id: s.cat_motion_id || '?',
+      motion_desc: s.cat_motion_desc || '',
+      motion_source: s.cat_motion_source || '',
+    }]).map(cat => {
+      const speaker = cat.speaker || '猫';
+      const motionId = cat.motion_id || s.cat_motion_id || '?';
+      const desc = (cat.motion_desc || s.cat_motion_desc || '').slice(0, 24);
+      const source = cat.motion_source || '';
+      const sourceLabel = source === 'user' ? '（用户素材）' : '';
+      return `<span>🐱 ${speaker}: motion#${motionId} ${desc}${sourceLabel}</span>`;
+    }).join('');
+
     const fallbackTag = s.is_fallback ? '<span class="tag" style="color:var(--warning)">🔧 兜底素材</span>' : '';
+    const audioTag = s.audio_muted ? '<span class="tag" style="color:var(--warning)">🔇 静音</span>' : '';
+    const catLayoutTag = formatCatLayoutTag(s.cat_layout_overrides);
 
     return `<div class="scene-item">
       <div class="scene-num">${s.scene_id}</div>
       <div class="scene-info">
         <div class="desc">${s.description} <span style="color:var(--text2);font-weight:400">[${s.duration}秒]</span></div>
         <div class="detail">
-          <span>🐱 motion#${s.cat_motion_id || '?'} ${(s.cat_motion_desc || '').slice(0,30)}</span>
+          ${renderedCats}
           <span>🎭 ${s.emotion || ''}</span>
           ${s.match_score ? `<span>⭐ 匹配度:${s.match_score}</span>` : ''}
+          ${audioTag}
+          ${catLayoutTag}
           ${fallbackTag}
         </div>
         ${s.subtitle ? `<div class="subtitle-text">💬 ${s.subtitle}</div>` : ''}
@@ -883,6 +904,27 @@ function renderStep3(data) {
   `);
 }
 
+function formatCatLayoutTag(overrides) {
+  if (!overrides || typeof overrides !== 'object') return '';
+  const parts = Object.entries(overrides).map(([slot, value]) => {
+    if (!value || typeof value !== 'object') return '';
+    if (value.scale_multiplier) return `${slot} x${value.scale_multiplier}`;
+    if (value.scale) return `${slot} ${value.scale}px`;
+    return '';
+  }).filter(Boolean);
+  return parts.length ? `<span class="tag" style="color:var(--success)">🐱 布局 ${parts.join(' / ')}</span>` : '';
+}
+
+function materialSourceLabel(item) {
+  if (!item || typeof item !== 'object') return '';
+  if (item.source === 'user') return '用户素材: ';
+  if (item.reused) return '复用素材: ';
+  if ((item.type || '').includes('复用')) return '复用素材: ';
+  if ((item.type || '').includes('缺失') || item.fallback) return '生成素材: ';
+  if (item.source === 'local') return '本地素材: ';
+  return item.source ? `${item.source}: ` : '';
+}
+
 // ─── Video Generation ───
 async function doGenerateVideo() {
   const btn = document.getElementById('generateVideoBtn');
@@ -913,18 +955,27 @@ async function doGenerateVideo() {
   eventSource.addEventListener('done', (e) => {
     const data = JSON.parse(e.data);
     eventSource.close();
-    S.videoUrl = data.video_url;  // 保存以供最终输出使用
-    btn.textContent = '✅ 视频已生成';
-    btn.classList.remove('btn-success');
-    btn.classList.add('btn-primary');
+    const playableVideoUrl = withVideoCacheBust(data.video_url);
+    S.videoUrl = playableVideoUrl;  // 保存以供最终输出使用
+    if (data.scenes) {
+      S.storyboard = { ...S.storyboard, ...data, state: 'DONE' };
+      renderStep3(S.storyboard);
+    }
+    const activeBtn = document.getElementById('generateVideoBtn') || btn;
+    activeBtn.disabled = true;
+    activeBtn.textContent = '✅ 视频已生成';
+    activeBtn.classList.remove('btn-success');
+    activeBtn.classList.add('btn-primary');
 
-    progressArea.innerHTML = `
+    const refreshedProgressArea = document.getElementById('videoProgressArea') || progressArea;
+
+    refreshedProgressArea.innerHTML = `
       <div class="card">
         <h2>🎉 视频已生成！</h2>
         <div style="margin:16px 0">
           <video controls autoplay loop style="width:100%;max-width:760px;border-radius:var(--radius-sm);display:block;margin:0 auto"
                  poster="">
-            <source src="${data.video_url}" type="video/mp4">
+            <source src="${playableVideoUrl}" type="video/mp4">
             你的浏览器不支持视频播放
           </video>
         </div>
@@ -932,7 +983,7 @@ async function doGenerateVideo() {
           📁 ${data.video_url} | 📦 ${data.file_size_mb}MB
         </div>
         <div class="text-center mt-16">
-          <a href="${data.video_url}" download class="btn btn-primary">💾 下载视频</a>
+          <a href="${playableVideoUrl}" download class="btn btn-primary">💾 下载视频</a>
         </div>
       </div>
     `;
@@ -967,6 +1018,7 @@ async function doEdit() {
     if (data.error) { alert(data.error); input.disabled = false; return; }
 
     S.storyboard = data;
+    S.videoUrl = null;
     renderStep3(data);
     document.getElementById('editInput').value = '';
 
@@ -988,6 +1040,12 @@ async function doEdit() {
 function quickEdit(hint) {
   document.getElementById('editInput').value = hint;
   doEdit();
+}
+
+function withVideoCacheBust(url) {
+  if (!url) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${Date.now()}`;
 }
 
 // ─── Step 4: Final Output ───
@@ -1044,7 +1102,8 @@ function renderFinal(data) {
   const assets = (data.asset_list || []).map(a => {
     const genAssets = (a.generated_assets || []).map(ga => {
       if (ga.error) return `<li>⚠️ 生成失败: ${ga.error}</li>`;
-      return `<li>🎨 ${(ga.file || '').split('/').pop()}</li>`;
+      const label = ga.reused ? '复用' : '生成';
+      return `<li>🎨 ${label}: ${(ga.file || '').split('/').pop()}</li>`;
     }).join('');
     return `<div style="font-size:13px;margin-bottom:4px">
       🎞 镜${a.scene_id}: motion#${a.cat_motion_id} ${genAssets}
