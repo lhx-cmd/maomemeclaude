@@ -124,6 +124,82 @@ def audio_asset_index_context(limit: int = 30) -> str:
     return "\n".join(lines)
 
 
+def default_audio_for_motion(motion_id: str | int | None) -> dict[str, Any] | None:
+    """Return the default extracted audio for a specific local cat motion."""
+    target_motion_id = str(motion_id or "").strip()
+    if not target_motion_id:
+        return None
+
+    assets = _load_index_assets()
+    if not assets:
+        try:
+            assets = rebuild_cat_motion_audio_index().get("assets", [])
+        except Exception:
+            assets = []
+
+    for item in assets:
+        if not isinstance(item, dict):
+            continue
+        if str(item.get("source_motion_id") or "").strip() != target_motion_id:
+            continue
+        audio_file = str(item.get("file") or "").strip()
+        if not audio_file or not Path(audio_file).exists():
+            return None
+        return {
+            "file": audio_file,
+            "source": AUDIO_ASSET_KIND,
+            "source_motion_id": target_motion_id,
+            "description": str(item.get("description") or ""),
+            "duration_seconds": item.get("duration_seconds"),
+            "score": 100,
+            "reason": "当前猫动作素材的默认原声",
+        }
+    return None
+
+
+def match_audio_asset(
+    scene: dict[str, Any],
+    preferred_motion_id: str | None = None,
+) -> dict[str, Any] | None:
+    """Choose a reusable cat meme audio asset for a storyboard scene."""
+    assets = _load_index_assets()
+    if not assets:
+        try:
+            assets = rebuild_cat_motion_audio_index().get("assets", [])
+        except Exception:
+            assets = []
+    if not assets:
+        return None
+
+    scene_text = _scene_audio_text(scene)
+    preferred_motion_id = str(preferred_motion_id or "").strip()
+    candidates = []
+    for item in assets:
+        if not isinstance(item, dict):
+            continue
+        audio_file = str(item.get("file") or "").strip()
+        if not audio_file or not Path(audio_file).exists():
+            continue
+        score = _score_audio_asset(scene_text, item, preferred_motion_id)
+        if score <= 0:
+            continue
+        candidates.append((score, item))
+
+    if not candidates:
+        return None
+    candidates.sort(key=lambda candidate: candidate[0], reverse=True)
+    score, item = candidates[0]
+    return {
+        "file": str(item.get("file") or ""),
+        "source": AUDIO_ASSET_KIND,
+        "source_motion_id": str(item.get("source_motion_id") or ""),
+        "description": str(item.get("description") or ""),
+        "duration_seconds": item.get("duration_seconds"),
+        "score": score,
+        "reason": _audio_match_reason(item, preferred_motion_id),
+    }
+
+
 def _audio_dir() -> Path:
     return config.assets_root / AUDIO_SUBDIR
 
@@ -183,6 +259,85 @@ def _unique_list(items: list[str]) -> list[str]:
         seen.add(text)
         result.append(text)
     return result
+
+
+def _scene_audio_text(scene: dict[str, Any]) -> str:
+    fields = (
+        "description",
+        "subtitle",
+        "emotion",
+        "scene_caption",
+        "topic_caption",
+        "cat_motion_desc",
+        "suggested_background",
+        "suggested_prop",
+    )
+    return " ".join(str(scene.get(field) or "") for field in fields).lower()
+
+
+def _score_audio_asset(
+    scene_text: str,
+    item: dict[str, Any],
+    preferred_motion_id: str,
+) -> int:
+    score = 0
+    source_motion_id = str(item.get("source_motion_id") or "").strip()
+    if preferred_motion_id and source_motion_id == preferred_motion_id:
+        score += 30
+
+    searchable = [
+        str(item.get("description") or ""),
+        *[str(tag) for tag in item.get("tags", []) or []],
+        *[str(tag) for tag in item.get("use_cases", []) or []],
+        *[str(tag) for tag in item.get("actions", []) or []],
+        *[str(tag) for tag in item.get("emotions", []) or []],
+    ]
+    asset_text = " ".join(searchable).lower()
+    for token in _audio_match_tokens(scene_text):
+        if token and token in asset_text:
+            score += 4 if len(token) >= 2 else 1
+
+    avoid = [str(token).lower() for token in item.get("avoid", []) or []]
+    if any(token and token in scene_text for token in avoid):
+        score -= 12
+    return score
+
+
+def _audio_match_tokens(text: str) -> list[str]:
+    tokens = []
+    for raw in _split_audio_text(text):
+        raw = raw.strip().lower()
+        if raw:
+            tokens.append(raw)
+    cue_tokens = (
+        "敲电脑", "打字", "办公", "职场", "疲惫", "麻木", "迟到", "焦虑", "慌张",
+        "堵车", "赶路", "撒娇", "可爱", "崩溃", "失控", "哭", "老板", "会议",
+        "学习", "考试", "奶茶", "手机", "聊天",
+    )
+    tokens.extend(token for token in cue_tokens if token in text)
+    return _unique_list(tokens)
+
+
+def _split_audio_text(text: str) -> list[str]:
+    return (
+        text.replace("，", " ")
+        .replace("。", " ")
+        .replace("、", " ")
+        .replace("：", " ")
+        .replace(":", " ")
+        .replace("\n", " ")
+        .split()
+    )
+
+
+def _audio_match_reason(item: dict[str, Any], preferred_motion_id: str) -> str:
+    source_motion_id = str(item.get("source_motion_id") or "").strip()
+    if preferred_motion_id and source_motion_id == preferred_motion_id:
+        return "同一猫动作素材的原声音频"
+    tags = item.get("tags", []) or []
+    if tags:
+        return "按剧情/情绪标签匹配音频"
+    return "按音频描述匹配"
 
 
 def _probe_audio_stream(video_path: Path) -> dict[str, Any]:

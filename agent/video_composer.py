@@ -179,12 +179,16 @@ def _build_scene_plan(
     input_paths.append(str(motion_file))
     filters.append(_cat_key_filter(motion_index, duration, "cat_keyed"))
 
-    if has_audio and scene.get("use_motion_audio") and not scene.get("audio_muted"):
-        filters.append(
-            f"[{motion_index}:a]atrim=0:{duration},asetpts=PTS-STARTPTS[a0]"
+    filters.append(
+        _scene_audio_filter(
+            scene=scene,
+            input_paths=input_paths,
+            motion_index=motion_index,
+            motion_file=str(motion_file),
+            duration=duration,
+            has_motion_audio=has_audio,
         )
-    else:
-        filters.append(f"anullsrc=r=44100:cl=stereo:d={duration}[a0]")
+    )
 
     primary_motion_for_roles = str(primary_motion_file or scene.get("cat_motion_file") or motion_file)
     hyperframe_layout = dict(hyperframe_layout)
@@ -260,6 +264,89 @@ def _build_scene_plan(
         video_label=current_video,
         audio_label="[a0]",
     )
+
+
+def _scene_audio_filter(
+    scene: dict,
+    input_paths: list[str],
+    motion_index: int,
+    motion_file: str,
+    duration: float,
+    has_motion_audio: bool,
+) -> str:
+    if scene.get("audio_muted") or scene.get("audio_source") == "silent":
+        return _silent_audio_filter(duration)
+
+    start_offset = _scene_audio_start_offset(scene)
+    audio_duration = _scene_audio_duration(scene)
+    if audio_duration is not None and start_offset >= max(audio_duration - 0.02, 0):
+        return _silent_audio_filter(duration)
+
+    audio_file = str(scene.get("audio_file") or "").strip()
+    if audio_file and Path(audio_file).exists() and _has_audio_stream(Path(audio_file)):
+        if _same_media_file(audio_file, motion_file) and has_motion_audio:
+            return _trim_audio_filter(motion_index, duration, start_offset)
+        audio_index = len(input_paths)
+        input_paths.append(audio_file)
+        return _trim_audio_filter(audio_index, duration, start_offset)
+
+    if has_motion_audio and scene.get("use_motion_audio"):
+        return _trim_audio_filter(motion_index, duration, start_offset)
+
+    return _silent_audio_filter(duration)
+
+
+def _trim_audio_filter(input_index: int, duration: float, start_offset: float = 0.0) -> str:
+    start_offset = max(float(start_offset or 0.0), 0.0)
+    end_offset = start_offset + duration
+    fade_in = min(0.04, duration / 4)
+    fade_out = min(0.06, duration / 4)
+    fade_out_start = max(duration - fade_out, 0)
+    return (
+        f"[{input_index}:a]atrim={_fmt_time(start_offset)}:{_fmt_time(end_offset)},"
+        f"asetpts=PTS-STARTPTS,"
+        f"aformat=sample_rates=44100:channel_layouts=stereo,"
+        f"afade=t=in:st=0:d={_fmt_time(fade_in)},"
+        f"afade=t=out:st={_fmt_time(fade_out_start)}:d={_fmt_time(fade_out)},"
+        f"apad=whole_dur={_fmt_time(duration)},atrim=0:{_fmt_time(duration)}[a0]"
+    )
+
+
+def _silent_audio_filter(duration: float) -> str:
+    return f"anullsrc=r=44100:cl=stereo:d={duration}[a0]"
+
+
+def _scene_audio_start_offset(scene: dict) -> float:
+    return _float_or_default(
+        scene.get("audio_start_offset", scene.get("audio_start", 0)),
+        default=0.0,
+    )
+
+
+def _scene_audio_duration(scene: dict) -> float | None:
+    value = scene.get("audio_duration", scene.get("audio_duration_seconds"))
+    if value is None or value == "":
+        return None
+    return _float_or_default(value, default=None)
+
+
+def _float_or_default(value, default: Optional[float]) -> Optional[float]:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _fmt_time(value: float) -> str:
+    text = f"{float(value):.3f}".rstrip("0").rstrip(".")
+    return text if text else "0"
+
+
+def _same_media_file(left: str, right: str) -> bool:
+    try:
+        return Path(left).resolve() == Path(right).resolve()
+    except Exception:
+        return str(left) == str(right)
 
 
 def _cat_key_filter(input_index: int, duration: float, label: str) -> str:

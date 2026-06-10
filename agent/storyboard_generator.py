@@ -18,6 +18,7 @@ from .generated_asset_library import find_reusable_asset, write_asset_meta
 from .cat_role_planner import assign_cat_role_motions, apply_cat_role_decisions
 from .dialogue_enricher import enrich_hyperframe_dialogues
 from .user_material_library import build_user_motion_catalog
+from .audio_asset_library import default_audio_for_motion
 from .utils import load_cat_motions
 
 
@@ -295,6 +296,7 @@ def generate_storyboard(
 
     _restore_user_motion_bindings(storyboard_scenes, user_motion_bindings)
     _sync_storyboard_cat_motion_fields(storyboard_scenes)
+    _assign_audio_to_scenes(storyboard_scenes)
 
     return {
         "theme": theme,
@@ -330,6 +332,7 @@ def fill_storyboard_gaps_for_video(storyboard: dict) -> dict:
         )
 
     _sync_storyboard_cat_motion_fields(scenes)
+    _assign_audio_to_scenes(scenes)
 
     updated = dict(storyboard)
     updated["scenes"] = scenes
@@ -1014,6 +1017,111 @@ def _apply_user_material_matches(
             scene["cat_motion_source"] = "user"
             scene["cat_motion_binding"] = "auto_user_match"
             _bind_user_motion_to_visible_dialogues(scene, file_path, scene["cat_motion_desc"], motion_id)
+
+
+def _assign_audio_to_scenes(scenes: list[dict]) -> None:
+    audio_cursors: dict[str, float] = {}
+    for scene in scenes:
+        _assign_scene_audio(scene)
+        _assign_scene_audio_start(scene, audio_cursors)
+
+
+def _assign_scene_audio(scene: dict) -> None:
+    if scene.get("audio_muted"):
+        scene["audio_source"] = "silent"
+        scene["use_motion_audio"] = False
+        scene.pop("audio_file", None)
+        scene.pop("audio_motion_id", None)
+        return
+
+    motion_file = str(scene.get("cat_motion_file") or "").strip()
+    motion_id = str(scene.get("cat_motion_id") or "").strip()
+    if not motion_file:
+        scene["audio_source"] = "silent"
+        scene["use_motion_audio"] = False
+        return
+
+    if scene.get("cat_motion_source") == "user" or motion_id.startswith("user"):
+        _set_scene_motion_original_audio(
+            scene=scene,
+            motion_file=motion_file,
+            motion_id=motion_id or "user",
+            reason="用户上传猫动作素材原声优先",
+        )
+        return
+
+    audio_match = default_audio_for_motion(motion_id)
+    if audio_match:
+        scene["audio_source"] = str(audio_match.get("source") or "cat_motion_audio")
+        scene["audio_file"] = str(audio_match.get("file") or "")
+        scene["audio_motion_id"] = str(audio_match.get("source_motion_id") or motion_id)
+        scene["audio_desc"] = str(audio_match.get("description") or "")
+        scene["audio_reason"] = str(audio_match.get("reason") or "按剧情和猫动作匹配音频")
+        duration = _float_or_none(audio_match.get("duration_seconds"))
+        if duration is not None:
+            scene["audio_duration"] = duration
+        scene["use_motion_audio"] = True
+        return
+
+    _set_scene_motion_original_audio(
+        scene=scene,
+        motion_file=motion_file,
+        motion_id=motion_id,
+        reason="音频库无匹配时使用当前猫动作原声兜底",
+    )
+
+
+def _set_scene_motion_original_audio(
+    scene: dict,
+    motion_file: str,
+    motion_id: str,
+    reason: str,
+) -> None:
+    scene["audio_source"] = "motion_original"
+    scene["audio_file"] = motion_file
+    scene["audio_motion_id"] = motion_id
+    scene["audio_desc"] = scene.get("cat_motion_desc", "")
+    scene["audio_reason"] = reason
+    scene["use_motion_audio"] = True
+
+
+def _assign_scene_audio_start(scene: dict, audio_cursors: dict[str, float]) -> None:
+    if not scene.get("use_motion_audio"):
+        scene.pop("audio_start_offset", None)
+        return
+    audio_file = str(scene.get("audio_file") or "").strip()
+    if not audio_file:
+        scene.pop("audio_start_offset", None)
+        return
+
+    cursor_key = _audio_cursor_key(audio_file)
+    start_offset = audio_cursors.get(cursor_key, 0.0)
+    audio_duration = _float_or_none(scene.get("audio_duration"))
+    if audio_duration is not None and start_offset >= max(audio_duration - 0.02, 0):
+        scene["audio_source"] = "silent"
+        scene["use_motion_audio"] = False
+        scene["audio_start_offset"] = round(start_offset, 3)
+        scene["audio_reason"] = "默认音频已播放完，避免从头循环，使用静音补足"
+        return
+
+    scene["audio_start_offset"] = round(start_offset, 3)
+    audio_cursors[cursor_key] = start_offset + float(scene.get("duration", DEFAULT_SCENE_DURATION) or DEFAULT_SCENE_DURATION)
+
+
+def _audio_cursor_key(audio_file: str) -> str:
+    try:
+        return str(Path(audio_file).resolve())
+    except Exception:
+        return str(audio_file)
+
+
+def _float_or_none(value: Any) -> float | None:
+    try:
+        if value is None or value == "":
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _bind_user_motion_to_visible_dialogues(

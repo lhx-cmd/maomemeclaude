@@ -359,8 +359,107 @@ class VideoComposerPlanTest(unittest.TestCase):
                 scene_index=3,
             )
 
-            self.assertIn("[0:a]atrim=0:2.0,asetpts=PTS-STARTPTS[a0]", plan.filter_complex)
+            self.assertIn(
+                "[0:a]atrim=0:2,asetpts=PTS-STARTPTS",
+                plan.filter_complex,
+            )
+            self.assertIn("aformat=sample_rates=44100:channel_layouts=stereo", plan.filter_complex)
+            self.assertIn("apad=whole_dur=2,atrim=0:2[a0]", plan.filter_complex)
             self.assertNotIn("anullsrc=r=44100:cl=stereo:d=2.0[a0]", plan.filter_complex)
+
+    def test_render_plan_uses_agent_selected_audio_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            motion = tmp_path / "motion.mp4"
+            audio = tmp_path / "cat_motion_1.m4a"
+            motion.touch()
+            audio.touch()
+
+            scene = {
+                "scene_id": 4,
+                "audio_file": str(audio),
+                "audio_source": "cat_motion_audio",
+                "use_motion_audio": True,
+            }
+
+            with patch.object(video_composer, "_has_audio_stream", return_value=True):
+                plan = video_composer._build_scene_plan(
+                    scene=scene,
+                    motion_file=str(motion),
+                    duration=2.0,
+                    font="/tmp/font.ttf",
+                    has_audio=False,
+                    scene_index=3,
+                )
+
+            self.assertIn(str(audio), plan.input_paths)
+            audio_index = plan.input_paths.index(str(audio))
+            self.assertIn(f"[{audio_index}:a]atrim=0:2", plan.filter_complex)
+            self.assertIn("apad=whole_dur=2,atrim=0:2[a0]", plan.filter_complex)
+            self.assertNotIn("anullsrc=r=44100:cl=stereo:d=2.0[a0]", plan.filter_complex)
+
+    def test_render_plan_uses_audio_start_offset_and_fades_boundaries(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            motion = tmp_path / "motion.mp4"
+            audio = tmp_path / "cat_motion_9.m4a"
+            motion.touch()
+            audio.touch()
+
+            scene = {
+                "scene_id": 5,
+                "audio_file": str(audio),
+                "audio_source": "cat_motion_audio",
+                "audio_start_offset": 1.25,
+                "audio_duration": 3.34,
+                "use_motion_audio": True,
+            }
+
+            with patch.object(video_composer, "_has_audio_stream", return_value=True):
+                plan = video_composer._build_scene_plan(
+                    scene=scene,
+                    motion_file=str(motion),
+                    duration=2.0,
+                    font="/tmp/font.ttf",
+                    has_audio=False,
+                    scene_index=4,
+                )
+
+            audio_index = plan.input_paths.index(str(audio))
+            self.assertIn(f"[{audio_index}:a]atrim=1.25:3.25", plan.filter_complex)
+            self.assertIn("afade=t=in:st=0:d=", plan.filter_complex)
+            self.assertIn("afade=t=out:st=", plan.filter_complex)
+            self.assertIn("atrim=0:2[a0]", plan.filter_complex)
+
+    def test_render_plan_uses_silence_when_default_audio_is_exhausted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            motion = tmp_path / "motion.mp4"
+            audio = tmp_path / "cat_motion_9.m4a"
+            motion.touch()
+            audio.touch()
+
+            scene = {
+                "scene_id": 6,
+                "audio_file": str(audio),
+                "audio_source": "cat_motion_audio",
+                "audio_start_offset": 3.5,
+                "audio_duration": 3.34,
+                "use_motion_audio": True,
+            }
+
+            with patch.object(video_composer, "_has_audio_stream", return_value=True):
+                plan = video_composer._build_scene_plan(
+                    scene=scene,
+                    motion_file=str(motion),
+                    duration=2.0,
+                    font="/tmp/font.ttf",
+                    has_audio=False,
+                    scene_index=5,
+                )
+
+            self.assertNotIn(str(audio), plan.input_paths)
+            self.assertIn("anullsrc=r=44100:cl=stereo:d=2.0[a0]", plan.filter_complex)
 
     def test_render_plan_honors_left_cat_scale_override(self):
         with tempfile.TemporaryDirectory() as tmp:

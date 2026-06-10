@@ -963,6 +963,114 @@ class StoryboardGeneratorTest(unittest.TestCase):
         self.assertEqual(scene["cat_motion_source"], "user")
         self.assertEqual(scene["dialogues"][0]["motion_file"], "/tmp/session_mat_mp4")
         self.assertEqual(scene["dialogues"][0]["motion_source"], "user")
+        self.assertEqual(scene["audio_source"], "motion_original")
+        self.assertEqual(scene["audio_file"], "/tmp/session_mat_mp4")
+        self.assertTrue(scene["use_motion_audio"])
+
+    @patch("agent.storyboard_generator.default_audio_for_motion", create=True)
+    @patch("agent.storyboard_generator.match_stickers")
+    @patch("agent.storyboard_generator.match_cat_motion")
+    def test_storyboard_assigns_default_audio_asset_for_local_motion(
+        self,
+        match_motion,
+        match_stickers,
+        default_audio,
+    ):
+        match_motion.return_value = {
+            "motion_id": "1",
+            "file_path": "/tmp/1.mp4",
+            "description": "蓝衣灰猫敲电脑",
+            "score": 5,
+        }
+        match_stickers.return_value = []
+        default_audio.return_value = {
+            "file": "/tmp/cat_motion_1.m4a",
+            "source": "cat_motion_audio",
+            "source_motion_id": "1",
+            "description": "蓝衣灰猫敲电脑原声",
+            "reason": "同一猫动作原声",
+            "score": 20,
+        }
+
+        storyboard = storyboard_generator.generate_storyboard(
+            selected_script={
+                "title": "打工人",
+                "version_name": "v",
+                "scenes": [
+                    {
+                        "scene_id": 1,
+                        "description": "猫坐在工位前疯狂敲电脑",
+                        "duration_sec": 4,
+                        "subtitle_text": "今天又要加班",
+                        "emotion": "疲惫",
+                    }
+                ],
+            },
+            theme="打工人",
+            auto_fill_gaps=False,
+        )
+
+        scene = storyboard["scenes"][0]
+        self.assertEqual(scene["audio_source"], "cat_motion_audio")
+        self.assertEqual(scene["audio_file"], "/tmp/cat_motion_1.m4a")
+        self.assertEqual(scene["audio_motion_id"], "1")
+        self.assertTrue(scene["use_motion_audio"])
+        default_audio.assert_called_once_with("1")
+
+    @patch("agent.storyboard_generator.default_audio_for_motion", create=True)
+    @patch("agent.storyboard_generator.match_stickers")
+    @patch("agent.storyboard_generator.match_cat_motion")
+    def test_storyboard_continues_reused_default_audio_without_restarting(
+        self,
+        match_motion,
+        match_stickers,
+        default_audio,
+    ):
+        match_motion.return_value = {
+            "motion_id": "9",
+            "file_path": "/tmp/9.mp4",
+            "description": "小猫高速晃头",
+            "score": 5,
+        }
+        match_stickers.return_value = []
+        default_audio.return_value = {
+            "file": "/tmp/cat_motion_9.m4a",
+            "source": "cat_motion_audio",
+            "source_motion_id": "9",
+            "description": "小猫高速晃头原声",
+            "duration_seconds": 3.34,
+            "reason": "当前猫动作素材的默认原声",
+        }
+
+        storyboard = storyboard_generator.generate_storyboard(
+            selected_script={
+                "title": "期末崩溃",
+                "version_name": "v",
+                "scenes": [
+                    {
+                        "scene_id": 1,
+                        "description": "小猫高速晃头，焦虑到模糊",
+                        "duration_sec": 2,
+                        "subtitle_text": "我真的复习不完",
+                    },
+                    {
+                        "scene_id": 2,
+                        "description": "小猫继续崩溃大哭",
+                        "duration_sec": 2,
+                        "subtitle_text": "明天就考试了",
+                    },
+                ],
+            },
+            theme="期末周",
+            auto_fill_gaps=False,
+        )
+
+        first, second = storyboard["scenes"]
+        self.assertEqual(first["audio_file"], "/tmp/cat_motion_9.m4a")
+        self.assertEqual(second["audio_file"], "/tmp/cat_motion_9.m4a")
+        self.assertEqual(first["audio_start_offset"], 0)
+        self.assertEqual(second["audio_start_offset"], first["duration"])
+        self.assertEqual(second["audio_duration"], 3.34)
 
     @patch("agent.storyboard_generator.match_stickers")
     @patch("agent.storyboard_generator.match_cat_motion")
